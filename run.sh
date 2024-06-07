@@ -54,8 +54,8 @@ check_block_hash() {
 # Run benchmarks
 for run in $(seq 1 $RUNS); do
   for i in "${!CLIENT_ARRAY[@]}"; do
-    echo "Run $run - Client ${CLIENT_ARRAY[$i]} - Image ${IMAGE_ARRAY[$i]}"
-    
+    echo "=== Run round $run - Client ${CLIENT_ARRAY[$i]} - Image ${IMAGE_ARRAY[$i]} ==="
+
     client="${CLIENT_ARRAY[$i]}"
     image="${IMAGE_ARRAY[$i]}"
 
@@ -77,13 +77,30 @@ for run in $(seq 1 $RUNS); do
 
     # Record the time when the block hash matches
     block_hash_time=$(check_block_hash $client)
-
-    # Calculate the interval
     interval=$((block_hash_time - start_time))
     
-    # Write the interval to a file in OUTPUT_DIR
-    output_file="${OUTPUT_DIR}/${client}_${i}.txt"
+    output_file="${OUTPUT_DIR}/${client}_${run}_first.txt"
     echo "$interval" > "$output_file"
+    echo "=== Interval $interval written to $output_file ==="
+
+    # Record the second start time
+    start_time=$(date +%s%3N)
+
+    if [ -z "$image" ]; then
+      echo "Image input is empty, using default image."
+      python3 setup_node.py --client $client
+    else
+      echo "Using provided image: $image for $client"
+      python3 setup_node.py --client $client --image $image
+    fi
+
+    # Record the time when the block hash matches
+    block_hash_time=$(check_block_hash $client)
+    interval=$((block_hash_time - start_time))
+    
+    output_file="${OUTPUT_DIR}/${client}_${run}_second.txt"
+    echo "$interval" > "$output_file"
+    echo "=== Interval $interval written to $output_file ==="
 
     cd "scripts/$client"
     docker compose down
@@ -91,4 +108,3 @@ for run in $(seq 1 $RUNS); do
     cd ../..
   done
 done
-
