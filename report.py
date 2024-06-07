@@ -44,19 +44,26 @@ def get_client_results(results_path):
                     continue
                 if client not in client_results:
                     client_results[client] = {}
-                if part not in client_results[client]:
-                    client_results[client][part] = []
-                client_results[client][part].append(value)
-                print(f"Added value for {client} part {part}: {value}")
+                if run not in client_results[client]:
+                    client_results[client][run] = {}
+                if part not in client_results[client][run]:
+                    client_results[client][run][part] = []
+                client_results[client][run][part].append(value)
+                print(f"Added value for {client} run {run} part {part}: {value}")
             else:
                 print(f"Filename {filename} does not match expected pattern")
     return client_results
 
 def process_client_results(client_results):
     processed_results = {}
-    for client, parts in client_results.items():
+    for client, runs in client_results.items():
         processed_results[client] = {}
-        for part, values in parts.items():
+        for run, parts in runs.items():
+            for part, values in parts.items():
+                if part not in processed_results[client]:
+                    processed_results[client][part] = []
+                processed_results[client][part].extend(values)
+        for part, values in processed_results[client].items():
             processed_results[client][part] = calculate_metrics(values)
     return processed_results
 
@@ -65,6 +72,8 @@ def generate_json_report(processed_results, results_path):
         json.dump(processed_results, json_file, indent=4)
 
 def ms_to_readable_time(ms):
+    if ms is None:
+        return "N/A"
     minutes = ms // 60000
     seconds = (ms % 60000) // 1000
     return f"{minutes}min{seconds}s"
@@ -96,21 +105,20 @@ def generate_html_report(processed_results, results_path, images, computer_spec)
             image_to_print = el_images.get(client_without_tag, 'default')
         
         html_content += f'<h3>{client.capitalize()} - {image_to_print}</h3>'
-        for part, metrics in parts.items():
-            html_content += f'<h4>{part.capitalize()}</h4>'
-            html_content += ('<table>'
-                            '<thead>'
-                            '<tr>'
-                            '<th>Metric</th>'
-                            '<th>Value</th>'
-                            '</tr>'
-                            '</thead>'
-                            '<tbody>'
-                            f'<tr><td>Max</td><td>{ms_to_readable_time(metrics["max"])}</td></tr>'
-                            f'<tr><td>p50</td><td>{ms_to_readable_time(metrics["p50"])}</td></tr>'
-                            f'<tr><td>Min</td><td>{ms_to_readable_time(metrics["min"])}</td></tr>'
-                            f'<tr><td>Count</td><td>{metrics["count"]}</td></tr>'
-                            '</tbody></table>')
+        html_content += ('<table>'
+                         '<thead>'
+                         '<tr>'
+                         '<th>Metric</th>'
+                         '<th>First</th>'
+                         '<th>Second</th>'
+                         '</tr>'
+                         '</thead>'
+                         '<tbody>'
+                         f'<tr><td>Max</td><td>{ms_to_readable_time(parts["first"]["max"])}</td><td>{ms_to_readable_time(parts["second"]["max"])}</td></tr>'
+                         f'<tr><td>p50</td><td>{ms_to_readable_time(parts["first"]["p50"])}</td><td>{ms_to_readable_time(parts["second"]["p50"])}</td></tr>'
+                         f'<tr><td>Min</td><td>{ms_to_readable_time(parts["first"]["min"])}</td><td>{ms_to_readable_time(parts["second"]["min"])}</td></tr>'
+                         f'<tr><td>Count</td><td>{parts["first"]["count"]}</td><td>{parts["second"]["count"]}</td></tr>'
+                         '</tbody></table>')
     html_content += '</body></html>'
     
     soup = BeautifulSoup(html_content, 'html.parser')
