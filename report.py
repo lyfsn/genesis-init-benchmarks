@@ -10,17 +10,18 @@ def calculate_metrics(values):
         return {
             'max': None,
             'p50': None,
+            'p95': None,
+            'p99': None,
             'min': None,
             'count': 0
         }
     values = np.array(values, dtype=int)
-    max_value = int(np.max(values))
-    p50_value = int(np.percentile(values, 50))
-    min_value = int(np.min(values))
     return {
-        'max': max_value,
-        'p50': p50_value,
-        'min': min_value,
+        'max': int(np.max(values)),
+        'p50': int(np.percentile(values, 50)),
+        'p95': int(np.percentile(values, 95)),
+        'p99': int(np.percentile(values, 99)),
+        'min': int(np.min(values)),
         'count': len(values)
     }
 
@@ -44,11 +45,9 @@ def get_client_results(results_path):
                     continue
                 if client not in client_results:
                     client_results[client] = {}
-                if run not in client_results[client]:
-                    client_results[client][run] = {}
-                if part not in client_results[client][run]:
-                    client_results[client][run][part] = []
-                client_results[client][run][part].append(value)
+                if part not in client_results[client]:
+                    client_results[client][part] = []
+                client_results[client][part].append(value)
                 print(f"Added value for {client} run {run} part {part}: {value}")
             else:
                 print(f"Filename {filename} does not match expected pattern")
@@ -56,14 +55,9 @@ def get_client_results(results_path):
 
 def process_client_results(client_results):
     processed_results = {}
-    for client, runs in client_results.items():
+    for client, parts in client_results.items():
         processed_results[client] = {}
-        for run, parts in runs.items():
-            for part, values in parts.items():
-                if part not in processed_results[client]:
-                    processed_results[client][part] = []
-                processed_results[client][part].extend(values)
-        for part, values in processed_results[client].items():
+        for part, values in parts.items():
             processed_results[client][part] = calculate_metrics(values)
     return processed_results
 
@@ -116,6 +110,8 @@ def generate_html_report(processed_results, results_path, images, computer_spec)
                          '<tbody>'
                          f'<tr><td>Max</td><td>{ms_to_readable_time(parts["first"]["max"])}</td><td>{ms_to_readable_time(parts["second"]["max"])}</td></tr>'
                          f'<tr><td>p50</td><td>{ms_to_readable_time(parts["first"]["p50"])}</td><td>{ms_to_readable_time(parts["second"]["p50"])}</td></tr>'
+                         f'<tr><td>p95</td><td>{ms_to_readable_time(parts["first"]["p95"])}</td><td>{ms_to_readable_time(parts["second"]["p95"])}</td></tr>'
+                         f'<tr><td>p99</td><td>{ms_to_readable_time(parts["first"]["p99"])}</td><td>{ms_to_readable_time(parts["second"]["p99"])}</td></tr>'
                          f'<tr><td>Min</td><td>{ms_to_readable_time(parts["first"]["min"])}</td><td>{ms_to_readable_time(parts["second"]["min"])}</td></tr>'
                          f'<tr><td>Count</td><td>{parts["first"]["count"]}</td><td>{parts["second"]["count"]}</td></tr>'
                          '</tbody></table>')
