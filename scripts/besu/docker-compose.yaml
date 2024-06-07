@@ -38,6 +38,7 @@ services:
     - --rpc-http-api=${EC_ENABLED_MODULES}
     - --rpc-http-cors-origins=*
     - --host-whitelist=*
+    - --genesis-state-hash-cache-enabled=true
     logging:
       driver: json-file
       options:
