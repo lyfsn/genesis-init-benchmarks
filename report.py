@@ -2,7 +2,6 @@ import argparse
 import json
 import os
 import numpy as np
-from scipy import stats
 from bs4 import BeautifulSoup
 
 def calculate_metrics(values):
