@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import numpy as np
+import yaml
 from bs4 import BeautifulSoup
 
 def calculate_metrics(values):
@@ -34,15 +35,15 @@ def get_client_results(results_path):
             client_results[client][run].append(value)
     return client_results
 
-def generate_json_report(client_results, output_path):
+def generate_json_report(client_results, results_path):
     metrics = {}
     for client, runs in client_results.items():
         all_values = [value for run_values in runs.values() for value in run_values]
         metrics[client] = calculate_metrics(all_values)
-    with open(output_path, 'w') as json_file:
+    with open(os.path.join(results_path, 'reports', 'results.json'), 'w') as json_file:
         json.dump(metrics, json_file, indent=4)
 
-def generate_html_report(client_results, output_path):
+def generate_html_report(client_results, results_path, images, computer_spec):
     html_content = ('<!DOCTYPE html>'
                     '<html lang="en">'
                     '<head>'
@@ -57,9 +58,18 @@ def generate_html_report(client_results, output_path):
                     '    </style>'
                     '</head>'
                     '<body>'
-                    '<h2>Benchmarking Report</h2>')
+                    '<h2>Benchmarking Report</h2>'
+                    f'<h3>Computer Specs</h3><pre>{computer_spec}</pre>')
+    image_json = json.loads(images)
     for client, runs in client_results.items():
-        html_content += f'<h3>{client.capitalize()}</h3>'
+        image_to_print = image_json.get(client, 'default')
+        if image_to_print == 'default':
+            with open('images.yaml', 'r') as f:
+                el_images = yaml.safe_load(f)["images"]
+            client_without_tag = client.split("_")[0]
+            image_to_print = el_images.get(client_without_tag, 'default')
+        
+        html_content += f'<h3>{client.capitalize()} - {image_to_print}</h3>'
         html_content += ('<table>'
                          '<thead>'
                          '<tr>'
@@ -89,24 +99,32 @@ def generate_html_report(client_results, output_path):
     
     soup = BeautifulSoup(html_content, 'html.parser')
     formatted_html = soup.prettify()
-    with open(output_path, 'w') as html_file:
+    with open(os.path.join(results_path, 'reports', 'report.html'), 'w') as html_file:
         html_file.write(formatted_html)
 
 def main():
     parser = argparse.ArgumentParser(description='Benchmark script')
     parser.add_argument('--resultsPath', type=str, help='Path to gather the results', default='results')
+    parser.add_argument('--images', type=str, help='Image values per each client',
+                        default='{ "nethermind": "default", "besu": "default", "geth": "default", "reth": "default", "erigon": "default" }')
+
     args = parser.parse_args()
 
     results_path = args.resultsPath
+    images = args.images
     reports_path = os.path.join(results_path, 'reports')
     os.makedirs(reports_path, exist_ok=True)
 
-    client_results = get_client_results(results_path)
-    json_output_path = os.path.join(reports_path, 'results.json')
-    generate_json_report(client_results, json_output_path)
+    # Get the computer spec
+    computer_spec = "Unknown"
+    spec_file = os.path.join(results_path, 'computer_specs.txt')
+    if os.path.exists(spec_file):
+        with open(spec_file, 'r') as file:
+            computer_spec = file.read().strip()
 
-    html_output_path = os.path.join(reports_path, 'report.html')
-    generate_html_report(client_results, html_output_path)
+    client_results = get_client_results(results_path)
+    generate_json_report(client_results, results_path)
+    generate_html_report(client_results, results_path, images, computer_spec)
 
     print('Done!')
 
