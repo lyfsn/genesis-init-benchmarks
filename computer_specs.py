@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import cpuinfo
+import psutil
 
 def print_computer_specs():
     info = "Computer Specs:\n"
