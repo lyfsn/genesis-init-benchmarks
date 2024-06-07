@@ -39,7 +39,7 @@ check_block_hash() {
   local client=$1
   local expected_hash="0xfcf55e2e15afed0cd61a28b1b1966ac1a2326e7cd5cd062743fa5e51f47f8417"
   local block_hash=""
-  local start_time=$(date +%s%3N)
+  local start_time=$(date +%s%N)
   
   while [ "$block_hash" != "$expected_hash" ]; do
     response=$(curl -s -X POST --data '{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["0x0", false],"id":1}' -H "Content-Type: application/json" http://localhost:8545)
@@ -50,7 +50,7 @@ check_block_hash() {
     sleep 1
   done
 
-  echo $(date +%s%3N)  # Return the timestamp in milliseconds
+  echo $(($(date +%s%N) / 1000000))  # Return the timestamp in milliseconds
 }
 
 # Run benchmarks
@@ -67,7 +67,7 @@ for run in $(seq 1 $RUNS); do
     cd ../..
 
     # Record the start time
-    start_time=$(date +%s%3N)
+    start_time=$(($(date +%s%N) / 1000000))
 
     if [ -z "$image" ]; then
       echo "Image input is empty, using default image."
@@ -85,8 +85,12 @@ for run in $(seq 1 $RUNS); do
     echo "$interval" > "$output_file"
     echo "=== Interval $interval written to $output_file ==="
 
+    cd "scripts/$client"
+    docker compose down
+    cd ../..
+
     # Record the second start time
-    start_time=$(date +%s%3N)
+    start_time=$(($(date +%s%N) / 1000000))
 
     if [ -z "$image" ]; then
       echo "Image input is empty, using default image."
