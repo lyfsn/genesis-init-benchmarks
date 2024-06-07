@@ -25,7 +25,7 @@ services:
     - 8545
     - 8551
     command:
-    - --config=holesky
+    - --config=none.cfg
     - --Init.ChainSpecPath=/tmp/chainspec/chainspec.json
     - --datadir=/nethermind/data
     - --log=INFO
