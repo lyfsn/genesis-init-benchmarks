@@ -24,15 +24,17 @@ def get_client_results(results_path):
     client_results = {}
     for filename in os.listdir(results_path):
         if filename.endswith('.txt'):
-            client, run, _ = filename.rsplit('_', 2)
-            run = int(run)
-            with open(os.path.join(results_path, filename), 'r') as file:
-                value = float(file.read().strip())
-            if client not in client_results:
-                client_results[client] = {}
-            if run not in client_results[client]:
-                client_results[client][run] = []
-            client_results[client][run].append(value)
+            parts = filename.rsplit('_', 2)
+            if len(parts) == 3:
+                client, run, _ = parts
+                run = int(run)
+                with open(os.path.join(results_path, filename), 'r') as file:
+                    value = float(file.read().strip())
+                if client not in client_results:
+                    client_results[client] = {}
+                if run not in client_results[client]:
+                    client_results[client][run] = []
+                client_results[client][run].append(value)
     return client_results
 
 def generate_json_report(client_results, results_path):
