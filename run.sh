@@ -54,6 +54,8 @@ check_block_hash() {
 # Run benchmarks
 for run in $(seq 1 $RUNS); do
   for i in "${!CLIENT_ARRAY[@]}"; do
+    echo "Run $run - Client ${CLIENT_ARRAY[$i]} - Image ${IMAGE_ARRAY[$i]}"
+    
     client="${CLIENT_ARRAY[$i]}"
     image="${IMAGE_ARRAY[$i]}"
 
@@ -81,7 +83,7 @@ for run in $(seq 1 $RUNS); do
     
     # Write the interval to a file in OUTPUT_DIR
     output_file="${OUTPUT_DIR}/${client}_${i}.txt"
-    echo "$client: $interval ms" > "$output_file"
+    echo "$interval" > "$output_file"
 
     cd "scripts/$client"
     docker compose down
