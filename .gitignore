@@ -10,3 +10,7 @@
 # Others
 .idea/
 /__pycache__/
+
+result*
+execution-data
+.env

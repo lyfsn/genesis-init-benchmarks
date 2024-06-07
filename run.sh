@@ -30,13 +30,40 @@ mkdir -p "$OUTPUT_DIR"
 
 # Install dependencies
 pip install -r requirements.txt
-make prepare_tools
+apt install jq
+
+# Function to check if the block hash matches
+check_block_hash() {
+  local client=$1
+  local expected_hash="0xfcf55e2e15afed0cd61a28b1b1966ac1a2326e7cd5cd062743fa5e51f47f8417"
+  local block_hash=""
+  local start_time=$(date +%s%3N)
+  
+  while [ "$block_hash" != "$expected_hash" ]; do
+    response=$(curl -s -X POST --data '{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["0x0", false],"id":1}' -H "Content-Type: application/json" http://localhost:8545)
+    block_hash=$(echo $response | jq -r '.result.hash')
+    if [ "$block_hash" == "null" ]; then
+      block_hash=""
+    fi
+    sleep 1
+  done
+
+  echo $(date +%s%3N)  # Return the timestamp in milliseconds
+}
 
 # Run benchmarks
 for run in $(seq 1 $RUNS); do
   for i in "${!CLIENT_ARRAY[@]}"; do
     client="${CLIENT_ARRAY[$i]}"
     image="${IMAGE_ARRAY[$i]}"
+
+    cd "scripts/$client"
+    docker compose down
+    sudo rm -rf execution-data
+    cd ../..
+
+    # Record the start time
+    start_time=$(date +%s%3N)
 
     if [ -z "$image" ]; then
       echo "Image input is empty, using default image."
@@ -46,13 +73,15 @@ for run in $(seq 1 $RUNS); do
       python3 setup_node.py --client $client --image $image
     fi
 
-    if [ -z "$WARMUP_FILE" ]; then
-      echo "Running script without warm up."
-      python3 run_kute.py --output "$OUTPUT_DIR" --testsPath "$TEST_PATH" --jwtPath /tmp/jwtsecret --client $client --run $run
-    else
-      echo "Using provided warm up file: $WARMUP_FILE"
-      python3 run_kute.py --output "$OUTPUT_DIR" --testsPath "$TEST_PATH" --jwtPath /tmp/jwtsecret --warmupPath "$WARMUP_FILE" --client $client --run $run
-    fi
+    # Record the time when the block hash matches
+    block_hash_time=$(check_block_hash $client)
+
+    # Calculate the interval
+    interval=$((block_hash_time - start_time))
+    
+    # Write the interval to a file in OUTPUT_DIR
+    output_file="${OUTPUT_DIR}/${client}_${i}.txt"
+    echo "$client: $interval ms" > "$output_file"
 
     cd "scripts/$client"
     docker compose down
@@ -61,10 +90,3 @@ for run in $(seq 1 $RUNS); do
   done
 done
 
-# Get metrics from results
-python3 report_tables.py --resultsPath "$OUTPUT_DIR" --clients "$CLIENTS" --testsPath "$TEST_PATH" --runs $RUNS
-python3 report_html.py --resultsPath "$OUTPUT_DIR" --clients "$CLIENTS" --testsPath "$TEST_PATH" --runs $RUNS
-
-
-# Zip the results folder
-zip -r "${OUTPUT_DIR}.zip" "$OUTPUT_DIR"
