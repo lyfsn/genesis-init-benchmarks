@@ -6,6 +6,15 @@ import yaml
 from bs4 import BeautifulSoup
 
 def calculate_metrics(values):
+    if not values:
+        return {
+            'max': None,
+            'p50': None,
+            'p95': None,
+            'p99': None,
+            'min': None,
+            'count': 0
+        }
     values = np.array(values, dtype=int)
     max_value = int(np.max(values))
     p50_value = int(np.percentile(values, 50))
