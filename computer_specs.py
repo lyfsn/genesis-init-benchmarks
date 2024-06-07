@@ -42,11 +42,15 @@ def save_to(output_folder, file_name, content):
         file.write(content)
 
 
-def main():
+def main(output_folder):
     # Print Computer specs
     computer_specs = print_computer_specs()
     save_to(output_folder, 'computer_specs.txt', computer_specs)
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description='Computer Specs Script')
+    parser.add_argument('--output_folder', type=str, required=True, help='The folder to save the output files')
+    args = parser.parse_args()
+    
+    main(args.output_folder)

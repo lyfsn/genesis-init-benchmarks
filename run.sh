@@ -32,7 +32,7 @@ mkdir -p "$OUTPUT_DIR"
 pip install -r requirements.txt
 apt install jq
 
-python3 computer_specs.py
+python3 computer_specs.py --output_folder $OUTPUT_DIR
 
 # Function to check if the block hash matches
 check_block_hash() {
