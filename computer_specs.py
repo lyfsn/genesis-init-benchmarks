@@ -6,6 +6,8 @@ import os
 import subprocess
 import cpuinfo
 import psutil
+import platform
+
 
 def print_computer_specs():
     info = "Computer Specs:\n"
