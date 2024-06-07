@@ -37,14 +37,25 @@ def get_client_results(results_path):
             parts = filename.rsplit('_', 2)
             if len(parts) == 3:
                 client, run, part = parts
-                run = int(run)
-                with open(os.path.join(results_path, filename), 'r') as file:
-                    value = int(file.read().strip())
+                part = part.replace('.txt', '')
+                try:
+                    run = int(run)
+                    with open(os.path.join(results_path, filename), 'r') as file:
+                        value = int(file.read().strip())
+                except ValueError:
+                    print(f"Skipping file {filename} due to invalid content")
+                    continue
+                except Exception as e:
+                    print(f"Error reading file {filename}: {e}")
+                    continue
                 if client not in client_results:
                     client_results[client] = {}
                 if run not in client_results[client]:
                     client_results[client][run] = {}
                 client_results[client][run][part] = value
+                print(f"Added value for {client} run {run} part {part}: {value}")
+            else:
+                print(f"Filename {filename} does not match expected pattern")
     return client_results
 
 def process_client_results(client_results):
@@ -55,6 +66,9 @@ def process_client_results(client_results):
             if 'first' in values and 'second' in values:
                 average = int(np.mean([values['first'], values['second']]))
                 all_values.append(average)
+                print(f"Run {run} for client {client} has values {values['first']} and {values['second']}, average: {average}")
+            else:
+                print(f"Run {run} for client {client} does not have both 'first' and 'second'")
         processed_results[client] = calculate_metrics(all_values)
     return processed_results
 
@@ -110,7 +124,7 @@ def generate_html_report(processed_results, results_path, images, computer_spec)
     formatted_html = soup.prettify()
     with open(os.path.join(results_path, 'reports', 'report.html'), 'w') as html_file:
         html_file.write(formatted_html)
-
+        
 def main():
     parser = argparse.ArgumentParser(description='Benchmark script')
     parser.add_argument('--resultsPath', type=str, help='Path to gather the results', default='results')
@@ -132,7 +146,11 @@ def main():
             computer_spec = file.read().strip()
 
     client_results = get_client_results(results_path)
+    print("Client Results:", client_results)  # Add debug information
+
     processed_results = process_client_results(client_results)
+    print("Processed Results:", processed_results)  # Add debug information
+
     generate_json_report(processed_results, results_path)
     generate_html_report(processed_results, results_path, images, computer_spec)
 
