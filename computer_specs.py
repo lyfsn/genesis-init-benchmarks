@@ -4,6 +4,7 @@ import datetime
 import json
 import os
 import subprocess
+import cpuinfo
 
 def print_computer_specs():
     info = "Computer Specs:\n"
