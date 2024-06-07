@@ -64,6 +64,11 @@ def generate_json_report(processed_results, results_path):
     with open(os.path.join(results_path, 'reports', 'results.json'), 'w') as json_file:
         json.dump(processed_results, json_file, indent=4)
 
+def ms_to_readable_time(ms):
+    minutes = ms // 60000
+    seconds = (ms % 60000) // 1000
+    return f"{minutes}min{seconds}s"
+
 def generate_html_report(processed_results, results_path, images, computer_spec):
     html_content = ('<!DOCTYPE html>'
                     '<html lang="en">'
@@ -101,9 +106,9 @@ def generate_html_report(processed_results, results_path, images, computer_spec)
                             '</tr>'
                             '</thead>'
                             '<tbody>'
-                            f'<tr><td>Max (ms)</td><td>{metrics["max"]}</td></tr>'
-                            f'<tr><td>p50 (ms)</td><td>{metrics["p50"]}</td></tr>'
-                            f'<tr><td>Min (ms)</td><td>{metrics["min"]}</td></tr>'
+                            f'<tr><td>Max</td><td>{ms_to_readable_time(metrics["max"])}</td></tr>'
+                            f'<tr><td>p50</td><td>{ms_to_readable_time(metrics["p50"])}</td></tr>'
+                            f'<tr><td>Min</td><td>{ms_to_readable_time(metrics["min"])}</td></tr>'
                             f'<tr><td>Count</td><td>{metrics["count"]}</td></tr>'
                             '</tbody></table>')
     html_content += '</body></html>'
