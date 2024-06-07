@@ -41,12 +41,10 @@ def get_client_results(results_path):
 def process_client_results(client_results):
     processed_results = {}
     for client, runs in client_results.items():
-        averages = []
+        all_values = []
         for run, values in runs.items():
-            if len(values) == 2:  # Ensure both '_first' and '_second' are present
-                average = int(np.mean(values))
-                averages.append(average)
-        processed_results[client] = calculate_metrics(averages)
+            all_values.extend(values)
+        processed_results[client] = calculate_metrics(all_values)
     return processed_results
 
 def generate_json_report(processed_results, results_path):
