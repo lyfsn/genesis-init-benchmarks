@@ -34,8 +34,8 @@ def get_client_results(results_path):
                 if client not in client_results:
                     client_results[client] = {}
                 if run not in client_results[client]:
-                    client_results[client][run] = []
-                client_results[client][run].append(value)
+                    client_results[client][run] = {}
+                client_results[client][run][part] = value
     return client_results
 
 def process_client_results(client_results):
@@ -43,7 +43,9 @@ def process_client_results(client_results):
     for client, runs in client_results.items():
         all_values = []
         for run, values in runs.items():
-            all_values.extend(values)
+            if 'first' in values and 'second' in values:
+                average = int(np.mean([values['first'], values['second']]))
+                all_values.append(average)
         processed_results[client] = calculate_metrics(all_values)
     return processed_results
 
