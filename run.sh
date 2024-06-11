@@ -80,6 +80,11 @@ for size in "${SIZES[@]}"; do
   python3 generate_genesis.py $TEST_PATH/genesis.json $TEST_PATH/tmp/genesis.json $new_size
   python3 generate_besu.py $TEST_PATH/besu.json $TEST_PATH/tmp/besu.json $new_size
 
+  docker stop gas-execution-client
+  docker stop gas-execution-client-sync
+  docker rm gas-execution-client
+  docker rm gas-execution-client-sync
+
   # Run benchmarks
   for run in $(seq 1 $RUNS); do
     for i in "${!CLIENT_ARRAY[@]}"; do
