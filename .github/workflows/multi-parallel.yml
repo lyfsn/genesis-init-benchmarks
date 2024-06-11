@@ -47,10 +47,6 @@ jobs:
           mkdir -p ${{ github.event.inputs.output_dir }}
           python3 computer_specs.py --output_folder ${{ github.event.inputs.output_dir }}
 
-      - name: Start Docker containers
-        run: |
-          docker-compose up -d
- 
       - name: Run benchmarks
         run: |
           IFS=',' read -ra CLIENTS <<< "${{ github.event.inputs.clients }}"
