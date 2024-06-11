@@ -6,25 +6,16 @@
 nohup \
   ./run.sh \
   -t "tests/" \
-  -w "warmup/warmup-1000bl-16wi-24tx.txt" \
   -c "nethermind,geth,reth,erigon,besu" \
-  -r 4 \
+  -r 8 \
   -o "results" \
+  -s 1,10,100,1000,2000 \
   > output.log 2>&1 &
 
 
 ./run.sh \
   -t "tests/" \
-  -w "warmup/warmup-1000bl-16wi-24tx.txt" \
   -c "nethermind" \
   -r 1 \
-  -o "results"
+  -o "results" \
   -s 1,10
-
-
-./run.sh \
-  -t "tests/" \
-  -w "warmup/warmup-1000bl-16wi-24tx.txt" \
-  -c "reth" \
-  -r 1 \
-  -o "results"

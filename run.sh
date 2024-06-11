@@ -2,24 +2,22 @@
 
 # Default inputs
 TEST_PATH="tests/"
-WARMUP_FILE="warmup/warmup-1000bl-16wi-24tx.txt"
 CLIENTS="nethermind,geth,reth"
 RUNS=8
 IMAGES="default"
 OUTPUT_DIR="results"
 SIZES=("1" "100" "1000")
 
-# Parse command line arguments# Parse command line arguments
-while getopts "t:w:c:r:i:o:s:" opt; do
+# Parse command line arguments
+while getopts "t:c:r:i:o:s:" opt; do
   case $opt in
     t) TEST_PATH="$OPTARG" ;;
-    w) WARMUP_FILE="$OPTARG" ;;
     c) CLIENTS="$OPTARG" ;;
     r) RUNS="$OPTARG" ;;
     i) IMAGES="$OPTARG" ;;
     o) OUTPUT_DIR="$OPTARG" ;;
     s) IFS=',' read -ra SIZES <<< "$OPTARG" ;; 
-    *) echo "Usage: $0 [-t test_path] [-w warmup_file] [-c clients] [-r runs] [-i images] [-o output_dir] [-s sizes]" >&2
+    *) echo "Usage: $0 [-t test_path] [-c clients] [-r runs] [-i images] [-o output_dir] [-s sizes]" >&2
        exit 1 ;;
   esac
 done
