@@ -1,0 +1,50 @@
+name: Run benchmarks
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_path:
+        description: 'Path to test file'
+        default: 'tests/'
+      clients:
+        description: 'Comma-separated list of client names (e.g., nethermind,geth,reth,besu,erigon)'
+        default: 'nethermind,geth,reth'
+        required: true
+      runs:
+        description: 'Number of runs for the application'
+        default: 4
+      output_dir:
+        description: 'Output directory for results'
+        default: 'results'
+      sizes:
+        description: 'Comma-separated list of sizes (e.g., 1,100,1000)'
+        default: '1,10'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Run benchmarks
+        run: |
+          chmod +x run.sh
+          ./run.sh \
+            -t "${{ github.event.inputs.test_path }}" \
+            -c "${{ github.event.inputs.clients }}" \
+            -r "${{ github.event.inputs.runs }}" \
+            -o "${{ github.event.inputs.output_dir }}" \
+            -s "${{ github.event.inputs.sizes }}"
