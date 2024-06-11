@@ -8,11 +8,11 @@ on:
         default: 'tests/'
       clients:
         description: 'Comma-separated list of client names (e.g., nethermind,geth,reth,besu,erigon)'
-        default: 'nethermind,geth,reth'
+        default: 'nethermind,reth,besu'
         required: true
       runs:
         description: 'Number of runs for the application'
-        default: 4
+        default: 1
       output_dir:
         description: 'Output directory for results'
         default: 'results'
