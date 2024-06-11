@@ -5,6 +5,8 @@ services:
     container_name: gas-execution-client
     restart: unless-stopped
     image: ${EC_IMAGE_VERSION}
+    environment:
+      - BESU_OPTS=-Xmx32g
     networks:
     - gas
     volumes:
