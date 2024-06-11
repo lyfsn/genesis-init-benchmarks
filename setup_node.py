@@ -6,8 +6,6 @@ import os
 import subprocess
 import yaml
 
-from utils import print_computer_specs
-
 
 def run_command(client, run_path):
     # Add logic here to run the appropriate command for each client
