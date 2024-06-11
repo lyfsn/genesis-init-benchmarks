@@ -30,87 +30,142 @@ mkdir -p "$OUTPUT_DIR"
 
 # Install dependencies
 pip install -r requirements.txt
-apt install jq
+apt install -y jq
 
 python3 computer_specs.py --output_folder $OUTPUT_DIR
 
-# Function to check if the block hash matches
-check_block_hash() {
+# Function to check if initialization is completed
+check_initialization_completed() {
   local client=$1
-  local expected_hash="0xfcf55e2e15afed0cd61a28b1b1966ac1a2326e7cd5cd062743fa5e51f47f8417"
-  local block_hash=""
-  local start_time=$(date +%s%N)
-  
-  while [ "$block_hash" != "$expected_hash" ]; do
-    response=$(curl -s -X POST --data '{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["0x0", false],"id":1}' -H "Content-Type: application/json" http://localhost:8545)
-    block_hash=$(echo $response | jq -r '.result.hash')
-    if [ "$block_hash" == "null" ]; then
-      block_hash=""
+  local log_entry=$2
+  local container_name="gas-execution-client"
+  local max_retries=1024
+  local retry_count=0
+  local wait_time=0.5  # 500 milliseconds
+
+  until [ "$(docker ps -q -f name=$container_name)" ]; do
+    echo "Waiting for container $container_name to start..."
+    sleep $wait_time
+    retry_count=$((retry_count+1))
+    if [ $retry_count -ge $max_retries ]; then
+      echo "Container $container_name did not start within the expected time."
+      return 1
     fi
-    sleep 1
   done
 
-  echo $(($(date +%s%N) / 1000000))  # Return the timestamp in milliseconds
+  echo "Waiting for log entry: $log_entry in $container_name..."
+  retry_count=0
+  until docker logs $container_name 2>&1 | grep -q "$log_entry"; do
+    sleep $wait_time
+    retry_count=$((retry_count+1))
+    if [ $retry_count -ge $max_retries ]; then
+      echo "Log entry $log_entry not found in $container_name within the expected time."
+      return 1
+    fi
+  done
+
+  return 0
 }
 
-# Run benchmarks
-for run in $(seq 1 $RUNS); do
-  for i in "${!CLIENT_ARRAY[@]}"; do
-    echo "=== Run round $run - Client ${CLIENT_ARRAY[$i]} - Image ${IMAGE_ARRAY[$i]} ==="
+mkdir -p $TEST_PATH/tmp
+SIZES=("1" "100" "1000")
 
-    client="${CLIENT_ARRAY[$i]}"
-    image="${IMAGE_ARRAY[$i]}"
+# Outer loop
+for size in "${SIZES[@]}"; do
+  echo "=== Running benchmarks for size ${size}M ==="
+  
+  new_size=$(echo "($size / 1.2 + 0.5)/1" | bc)
 
-    cd "scripts/$client"
-    docker compose down
-    sudo rm -rf execution-data
-    cd ../..
+  # Generate chainspec, genesis, and besu files
+  python3 generate_chainspec.py $TEST_PATH/chainspec.json $TEST_PATH/tmp/chainspec.json $new_size
+  python3 generate_genesis.py $TEST_PATH/genesis.json $TEST_PATH/tmp/genesis.json $new_size
+  python3 generate_besu.py $TEST_PATH/besu.json $TEST_PATH/tmp/besu.json $new_size
 
-    # Record the start time
-    start_time=$(($(date +%s%N) / 1000000))
+  # Run benchmarks
+  for run in $(seq 1 $RUNS); do
+    for i in "${!CLIENT_ARRAY[@]}"; do
+      echo "=== Run round $run - Client ${CLIENT_ARRAY[$i]} - Image ${IMAGE_ARRAY[$i]} ==="
 
-    if [ -z "$image" ]; then
-      echo "Image input is empty, using default image."
-      python3 setup_node.py --client $client
-    else
-      echo "Using provided image: $image for $client"
-      python3 setup_node.py --client $client --image $image
-    fi
+      client="${CLIENT_ARRAY[$i]}"
+      image="${IMAGE_ARRAY[$i]}"
 
-    # Record the time when the block hash matches
-    block_hash_time=$(check_block_hash $client)
-    interval=$((block_hash_time - start_time))
-    
-    output_file="${OUTPUT_DIR}/${client}_${run}_first.txt"
-    echo "$interval" > "$output_file"
-    echo "=== Interval $interval written to $output_file ==="
+      # Define the log entry based on the client
+      case $client in
+        nethermind) log_entry="initialization completed" ;;
+        reth) log_entry="Starting reth" ;;
+        erigon) log_entry="logging to file system" ;;
+        geth) log_entry="Set global gas cap" ;;
+        besu) log_entry="Writing node record to disk" ;;
+      esac
 
-    cd "scripts/$client"
-    docker compose down
-    cd ../..
+      cd "scripts/$client"
+      docker compose down -t 0
+      sudo rm -rf execution-data
+      cd ../..
 
-    # Record the second start time
-    start_time=$(($(date +%s%N) / 1000000))
+      # Record the start time
+      start_time=$(($(date +%s%N) / 1000000))
 
-    if [ -z "$image" ]; then
-      echo "Image input is empty, using default image."
-      python3 setup_node.py --client $client
-    else
-      echo "Using provided image: $image for $client"
-      python3 setup_node.py --client $client --image $image
-    fi
+      if [ -z "$image" ]; then
+        echo "Image input is empty, using default image."
+        python3 setup_node.py --client $client
+      else
+        echo "Using provided image: $image for $client"
+        python3 setup_node.py --client $client --image $image
+      fi
 
-    # Record the time when the block hash matches
-    block_hash_time=$(check_block_hash $client)
-    interval=$((block_hash_time - start_time))
-    
-    output_file="${OUTPUT_DIR}/${client}_${run}_second.txt"
-    echo "$interval" > "$output_file"
-    echo "=== Interval $interval written to $output_file ==="
+      # Check initialization completion
+      check_initialization_completed $client "$log_entry"
+      if [ $? -ne 0 ]; then
+        echo "Initialization check failed for client $client"
+        exit 1
+      fi
 
-    cd "scripts/$client"
-    docker compose down
-    sudo rm -rf execution-data
-    cd ../..
+      # Record the time when the initialization is completed
+      initialization_time=$(($(date +%s%N) / 1000000))
+      interval=$((initialization_time - start_time))
+      
+      output_file="${OUTPUT_DIR}/${client}_${run}_first_${size}M.txt"
+      echo "$interval" > "$output_file"
+      echo "=== Interval $interval written to $output_file ==="
+
+      cd "scripts/$client"
+      docker compose down -t 0
+      cd ../..
+
+      # Record the second start time
+      start_time=$(($(date +%s%N) / 1000000))
+
+      if [ -z "$image" ]; then
+        echo "Image input is empty, using default image."
+        python3 setup_node.py --client $client
+      else
+        echo "Using provided image: $image for $client"
+        python3 setup_node.py --client $client --image $image
+      fi
+
+      # Check initialization completion
+      check_initialization_completed $client "$log_entry"
+      if [ $? -ne 0 ]; then
+        echo "Initialization check failed for client $client"
+        exit 1
+      fi
+
+      # Record the time when the initialization is completed
+      initialization_time=$(($(date +%s%N) / 1000000))
+      interval=$((initialization_time - start_time))
+      
+      output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M.txt"
+      echo "$interval" > "$output_file"
+      echo "=== Interval $interval written to $output_file ==="
+
+      cd "scripts/$client"
+      docker compose down -t 0
+      sudo rm -rf execution-data
+      cd ../..
+    done
   done
 done
+
+python3 report.py 
+

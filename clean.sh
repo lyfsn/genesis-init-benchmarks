@@ -2,7 +2,7 @@ rm -rvf reports
 rm -rvf results
 
 rm nohup.out
-output.log
+rm output.log
 
 docker stop gas-execution-client
 docker stop gas-execution-client-sync

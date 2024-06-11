@@ -28,11 +28,11 @@ def calculate_metrics(values):
 def get_client_results(results_path):
     client_results = {}
     for filename in os.listdir(results_path):
-        if filename.endswith('.txt'):
-            parts = filename.rsplit('_', 2)
-            if len(parts) == 3:
-                client, run, part = parts
-                part = part.replace('.txt', '')
+        if filename.endswith('.txt') and filename != "computer_specs.txt":
+            parts = filename.rsplit('_', 3)
+            if len(parts) == 4:
+                client, run, part, size = parts
+                size = size.replace('.txt', '')
                 try:
                     run = int(run)
                     with open(os.path.join(results_path, filename), 'r') as file:
@@ -43,26 +43,33 @@ def get_client_results(results_path):
                 except Exception as e:
                     print(f"Error reading file {filename}: {e}")
                     continue
+                client = client  # Keep only the client name, ignore run
                 if client not in client_results:
                     client_results[client] = {}
-                if part not in client_results[client]:
-                    client_results[client][part] = []
-                client_results[client][part].append(value)
-                print(f"Added value for {client} run {run} part {part}: {value}")
+                if size not in client_results[client]:
+                    client_results[client][size] = {}
+                if part not in client_results[client][size]:
+                    client_results[client][size][part] = []
+                client_results[client][size][part].append(value)
+                print(f"Added value for size {size}, client {client}, part {part}: {value}")
             else:
                 print(f"Filename {filename} does not match expected pattern")
     return client_results
 
 def process_client_results(client_results):
     processed_results = {}
-    for client, parts in client_results.items():
+    for client, sizes in client_results.items():
         processed_results[client] = {}
-        for part, values in parts.items():
-            processed_results[client][part] = calculate_metrics(values)
+        for size, parts in sizes.items():
+            processed_results[client][size] = {}
+            for part, values in parts.items():
+                processed_results[client][size][part] = calculate_metrics(values)
     return processed_results
 
 def generate_json_report(processed_results, results_path):
-    with open(os.path.join(results_path, 'reports', 'results.json'), 'w') as json_file:
+    report_path = os.path.join(results_path, 'reports')
+    os.makedirs(report_path, exist_ok=True)
+    with open(os.path.join(report_path, 'results.json'), 'w') as json_file:
         json.dump(processed_results, json_file, indent=4)
 
 def ms_to_readable_time(ms):
@@ -70,6 +77,8 @@ def ms_to_readable_time(ms):
         return "N/A"
     minutes = ms // 60000
     seconds = (ms % 60000) // 1000
+    if minutes == 0:
+        return f"{seconds}s"
     return f"{minutes}min{seconds}s"
 
 def generate_html_report(processed_results, results_path, images, computer_spec):
@@ -90,7 +99,7 @@ def generate_html_report(processed_results, results_path, images, computer_spec)
                     '<h2>Benchmarking Report</h2>'
                     f'<h3>Computer Specs</h3><pre>{computer_spec}</pre>')
     image_json = json.loads(images)
-    for client, parts in processed_results.items():
+    for client, sizes in processed_results.items():
         image_to_print = image_json.get(client, 'default')
         if image_to_print == 'default':
             with open('images.yaml', 'r') as f:
@@ -102,6 +111,7 @@ def generate_html_report(processed_results, results_path, images, computer_spec)
         html_content += ('<table>'
                          '<thead>'
                          '<tr>'
+                         '<th>Size</th>'
                          '<th>Part</th>'
                          '<th>Max</th>'
                          '<th>p50</th>'
@@ -111,27 +121,29 @@ def generate_html_report(processed_results, results_path, images, computer_spec)
                          '<th>Count</th>'
                          '</tr>'
                          '</thead>'
-                         '<tbody>'
-                         f'<tr><td>First</td>'
-                         f'<td>{ms_to_readable_time(parts["first"]["max"])}</td>'
-                         f'<td>{ms_to_readable_time(parts["first"]["p50"])}</td>'
-                         f'<td>{ms_to_readable_time(parts["first"]["p95"])}</td>'
-                         f'<td>{ms_to_readable_time(parts["first"]["p99"])}</td>'
-                         f'<td>{ms_to_readable_time(parts["first"]["min"])}</td>'
-                         f'<td>{parts["first"]["count"]}</td></tr>'
-                         f'<tr><td>Second</td>'
-                         f'<td>{ms_to_readable_time(parts["second"]["max"])}</td>'
-                         f'<td>{ms_to_readable_time(parts["second"]["p50"])}</td>'
-                         f'<td>{ms_to_readable_time(parts["second"]["p95"])}</td>'
-                         f'<td>{ms_to_readable_time(parts["second"]["p99"])}</td>'
-                         f'<td>{ms_to_readable_time(parts["second"]["min"])}</td>'
-                         f'<td>{parts["second"]["count"]}</td></tr>'
-                         '</tbody></table>')
+                         '<tbody>')
+        # Sorting sizes by numeric value (assumes sizes are in the format like "1M", "10M", etc.)
+        sorted_sizes = sorted(sizes.items(), key=lambda x: int(x[0].replace('M', '')))
+        for size, parts in sorted_sizes:
+            # Sorting parts by 'first' before 'second' and by run number
+            sorted_parts = sorted(parts.items(), key=lambda x: (x[0],))
+            for part, metrics in sorted_parts:
+                html_content += (f'<tr><td>{size}</td>'
+                                 f'<td>{part}</td>'
+                                 f'<td>{ms_to_readable_time(metrics["max"])}</td>'
+                                 f'<td>{ms_to_readable_time(metrics["p50"])}</td>'
+                                 f'<td>{ms_to_readable_time(metrics["p95"])}</td>'
+                                 f'<td>{ms_to_readable_time(metrics["p99"])}</td>'
+                                 f'<td>{ms_to_readable_time(metrics["min"])}</td>'
+                                 f'<td>{metrics["count"]}</td></tr>')
+        html_content += '</tbody></table>'
     html_content += '</body></html>'
     
     soup = BeautifulSoup(html_content, 'html.parser')
     formatted_html = soup.prettify()
-    with open(os.path.join(results_path, 'reports', 'report.html'), 'w') as html_file:
+    report_path = os.path.join(results_path, 'reports')
+    os.makedirs(report_path, exist_ok=True)
+    with open(os.path.join(report_path, 'report.html'), 'w') as html_file:
         html_file.write(formatted_html)
 
 def main():
@@ -148,11 +160,12 @@ def main():
     os.makedirs(reports_path, exist_ok=True)
 
     # Get the computer spec
-    computer_spec = "Unknown"
-    spec_file = os.path.join(results_path, 'computer_specs.txt')
-    if os.path.exists(spec_file):
-        with open(spec_file, 'r') as file:
+    computer_spec_path = os.path.join(results_path, "computer_specs.txt")
+    if os.path.exists(computer_spec_path):
+        with open(computer_spec_path, 'r') as file:
             computer_spec = file.read().strip()
+    else:
+        computer_spec = "Not available"
 
     client_results = get_client_results(results_path)
     print("Client Results:", client_results)  # Add debug information
