@@ -18,7 +18,7 @@ while getopts "t:w:c:r:i:o:s:" opt; do
     r) RUNS="$OPTARG" ;;
     i) IMAGES="$OPTARG" ;;
     o) OUTPUT_DIR="$OPTARG" ;;
-    s) IFS=',' read -ra SIZES <<< "$OPTARG" ;;
+    s) IFS=',' read -ra CUSTOM_SIZES <<< "$OPTARG" ;;
     *) echo "Usage: $0 [-t test_path] [-w warmup_file] [-c clients] [-r runs] [-i images] [-o output_dir] [-s sizes]" >&2
        exit 1 ;;
   esac
@@ -26,6 +26,11 @@ done
 
 IFS=',' read -ra CLIENT_ARRAY <<< "$CLIENTS"
 IFS=',' read -ra IMAGE_ARRAY <<< "$IMAGES"
+
+# Use custom sizes if provided
+if [ -n "${CUSTOM_SIZES+x}" ]; then
+  SIZES=("${CUSTOM_SIZES[@]}")
+fi
 
 # Set up environment
 mkdir -p "$OUTPUT_DIR"
