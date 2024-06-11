@@ -1,37 +1,32 @@
-name: Run Parallel Benchmarks in multiple clients
+name: Run Parallel Benchmarks in Multiple Clients
 
 on:
   workflow_dispatch:
     inputs:
-      test:
+      test_path:
         description: 'Path to test file'
         default: 'tests/'
-      warmup:
-        description: 'Name of the warm up file'
-        default: 'warmup/warmup-1000bl-16wi-24tx.txt'
-        type: choice
-        options:
-          - ''
-          - warmup/warmup-100bl-16wi-32tx.txt
-          - warmup/warmup-1000bl-16wi-24tx.txt
-          - warmup/warmup-1000bl-16wi-1000tx.txt
-      client:
-        description: 'Comma-separated list of client names (e.g., nethermind,reth,geth,erigon)'
-        default: 'nethermind,geth,reth,besu,erigon'
+      clients:
+        description: 'Comma-separated list of client names (e.g., nethermind,geth,reth,besu,erigon)'
+        default: 'nethermind,geth,reth'
         required: true
       runs:
         description: 'Number of runs for the application'
-        required: false
         default: 8
       images:
         description: 'Comma-separated list of images for the clients (e.g., default,custom1,custom2)'
-        default: '"{\"nethermind\":\"default\",\"geth\":\"default\",\"reth\":\"default\",\"erigon\":\"default\",\"besu\":\"default\"}"'
+        default: 'default'
+      output_dir:
+        description: 'Output directory for results'
+        default: 'results'
+      sizes:
+        description: 'Comma-separated list of sizes (e.g., 1,100,1000)'
+        default: '1,10'
 
 jobs:
-  set-matrix:
+  build:
     runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,170 +34,148 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.x
+          python-version: 3.10
 
-      - name: Set matrix dynamically
-        id: set-matrix
+      - name: Install dependencies
         run: |
-          runs=${{ github.event.inputs.runs }}
-          clients="${{ github.event.inputs.client }}"
-          IFS=',' read -ra client_array <<< "$clients"
-          matrix_elements=()
+          pip install -r requirements.txt
+          sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Prepare environment
+        run: |
+          mkdir -p ${{ github.event.inputs.output_dir }}
+          python3 computer_specs.py --output_folder ${{ github.event.inputs.output_dir }}
+
+      - name: Run benchmarks
+        run: |
+          IFS=',' read -ra CLIENTS <<< "${{ github.event.inputs.clients }}"
+          IFS=',' read -ra IMAGES <<< "${{ github.event.inputs.images }}"
+          IFS=',' read -ra SIZES <<< "${{ github.event.inputs.sizes }}"
           
-          for ((i=1; i<=runs; i++)); do
-            for client in "${client_array[@]}"; do
-              element="{'run': '$i', 'client': '$client'}"
-              matrix_elements+=("$element")
+          TEST_PATH=${{ github.event.inputs.test_path }}
+          RUNS=${{ github.event.inputs.runs }}
+          OUTPUT_DIR=${{ github.event.inputs.output_dir }}
+
+          check_initialization_completed() {
+            local client=$1
+            local log_entry=$2
+            local container_name="gas-execution-client"
+            local max_retries=1024
+            local retry_count=0
+            local wait_time=0.5
+
+            until [ "$(docker ps -q -f name=$container_name)" ]; do
+              echo "Waiting for container $container_name to start..."
+              sleep $wait_time
+              retry_count=$((retry_count+1))
+              if [ $retry_count -ge $max_retries ]; then
+                echo "Container $container_name did not start within the expected time."
+                return 1
+              fi
+            done
+
+            echo "Waiting for log entry: $log_entry in $container_name..."
+            retry_count=0
+            until docker logs $container_name 2>&1 | grep -q "$log_entry"; do
+              sleep $wait_time
+              retry_count=$((retry_count+1))
+              if [ $retry_count -ge $max_retries ]; then
+                echo "Log entry $log_entry not found in $container_name within the expected time."
+                return 1
+              fi
+            done
+
+            return 0
+          }
+
+          mkdir -p $TEST_PATH/tmp
+
+          for size in "${SIZES[@]}"; do
+            echo "=== Running benchmarks for size ${size}M ==="
+            
+            new_size=$(echo "($size / 1.2 + 0.5)/1" | bc)
+
+            python3 generate_chainspec.py $TEST_PATH/chainspec.json $TEST_PATH/tmp/chainspec.json $new_size
+            python3 generate_genesis.py $TEST_PATH/genesis.json $TEST_PATH/tmp/genesis.json $new_size
+            python3 generate_besu.py $TEST_PATH/besu.json $TEST_PATH/tmp/besu.json $new_size
+
+            docker stop gas-execution-client
+            docker stop gas-execution-client-sync
+            docker rm gas-execution-client
+            docker rm gas-execution-client-sync
+
+            for run in $(seq 1 $RUNS); do
+              for i in "${!CLIENTS[@]}"; do
+                echo "=== Run round $run - Client ${CLIENTS[$i]} - Image ${IMAGES[$i]} ==="
+
+                client="${CLIENTS[$i]}"
+                image="${IMAGES[$i]}"
+
+                case $client in
+                  nethermind) log_entry="initialization completed" ;;
+                  reth) log_entry="Starting reth" ;;
+                  erigon) log_entry="logging to file system" ;;
+                  geth) log_entry="Set global gas cap" ;;
+                  besu) log_entry="Writing node record to disk" ;;
+                esac
+
+                cd "scripts/$client"
+                docker compose down -t 0
+                sudo rm -rf execution-data
+                cd ../..
+
+                start_time=$(($(date +%s%N) / 1000000))
+
+                if [ -z "$image" ]; then
+                  python3 setup_node.py --client $client
+                else
+                  python3 setup_node.py --client $client --image $image
+                fi
+
+                check_initialization_completed $client "$log_entry"
+                if [ $? -ne 0 ]; then
+                  echo "Initialization check failed for client $client"
+                  exit 1
+                fi
+
+                initialization_time=$(($(date +%s%N) / 1000000))
+                interval=$((initialization_time - start_time))
+                
+                output_file="${OUTPUT_DIR}/${client}_${run}_first_${size}M.txt"
+                echo "$interval" > "$output_file"
+                echo "=== Interval $interval written to $output_file ==="
+
+                cd "scripts/$client"
+                docker compose down gas-execution-client -t 0
+                cd ../..
+
+                start_time=$(($(date +%s%N) / 1000000))
+
+                if [ -z "$image" ]; then
+                  python3 setup_node.py --client $client
+                else
+                  python3 setup_node.py --client $client --image $image
+                fi
+
+                check_initialization_completed $client "$log_entry"
+                if [ $? -ne 0 ]; then
+                  echo "Initialization check failed for client $client"
+                  exit 1
+                fi
+
+                initialization_time=$(($(date +%s%N) / 1000000))
+                interval=$((initialization_time - start_time))
+                
+                output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M.txt"
+                echo "$interval" > "$output_file"
+                echo "=== Interval $interval written to $output_file ==="
+
+                cd "scripts/$client"
+                docker compose down -t 0
+                sudo rm -rf execution-data
+                cd ../..
+              done
             done
           done
-          
-          matrix="{\"include\": [$(IFS=,; echo "${matrix_elements[*]}")]}"
-        
-          echo "::set-output name=matrix::$matrix"
 
-  build:
-    needs: set-matrix
-    runs-on: ubuntu-latest
-    env:
-      DOTNET_INSTALL_DIR: "~/.dotnet"
-
-    strategy:
-      matrix: ${{ fromJSON(needs.set-matrix.outputs.matrix) }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "8.0.x"
-
-      - name: Install python dependencies
-        run: pip install -r requirements.txt
-
-      - name: Prepare kute dependencies
-        run: make prepare_tools
-
-      - name: Create results directory
-        run: |
-          mkdir results
-
-
-      - name: List leaf directories
-        run: |
-          # Define the directory to search
-          PARENT_DIR=${{ github.event.inputs.test }}
-          
-          # Find directories that do not contain subdirectories
-          LEAF_DIRS=$(find "$PARENT_DIR" -type d | while read -r dir; do
-            if [ -z "$(find "$dir" -mindepth 1 -maxdepth 1 -type d)" ]; then
-              echo "$dir"
-            fi
-          done)
-          
-          # Join directories with a delimiter (newline)
-          LEAF_DIRS=$(printf "%s\n" "$LEAF_DIRS")
-          
-          # Export the variable for the next steps
-          echo "LEAF_DIRS<<EOF" >> $GITHUB_ENV
-          echo "$LEAF_DIRS" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
-      - name: Run Node and run benchmarks
-        run: |
-          IFS=',' read -ra clients <<< "${{ github.event.inputs.client }}"
-          IFS=',' read -ra images <<< "${{ github.event.inputs.images }}"
-          run="${{ matrix.run }}"
-          client="${{ matrix.client }}"
-          test_path="${{ github.event.inputs.test }}"
-          
-          images="${{ github.event.inputs.images }}"
-          for test_dir in $LEAF_DIRS; do
-            if [ -z "$images" ]; then
-              python3 setup_node.py --client $client
-            else
-              echo "Using provided image: $images for $client"
-              python3 setup_node.py --client $client --imageBulk $images
-            fi
-            if [ -z "${{ github.event.inputs.warmup }}" ]; then
-              echo "Running script without warm up."
-              python3 run_kute.py --output results --testsPath "$test_dir" --jwtPath /tmp/jwtsecret --client $client --run $run
-            else
-              echo "Using provided warm up file: ${{ github.event.inputs.warmup }}"
-              python3 run_kute.py --output results --testsPath "$test_dir" --jwtPath /tmp/jwtsecret --warmupPath ${{ github.event.inputs.warmup }} --client $client --run $run
-            fi
-            cl_name=$(echo "$client" | cut -d '_' -f 1)
-            cd "scripts/$cl_name"
-            docker-compose down
-            sudo rm -rf execution-data
-            cd ../..
-          done
-
-      - name: Zip the results folder
-        run: |
-          CLEANED_RUN=$(echo "${{ matrix.run }}" | tr -d '\n')
-          CLEANED_CLIENT=$(echo "${{ matrix.client }}" | tr -d '\n')
-          echo "CLEANED_RUN=$CLEANED_RUN" >> $GITHUB_ENV
-          echo "CLEANED_CLIENT=$CLEANED_CLIENT" >> $GITHUB_ENV
-          zip -r results-${CLEANED_RUN}-${CLEANED_CLIENT}.zip results
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: results-${{ env.CLEANED_RUN }}-${{ env.CLEANED_CLIENT }}
-          path: results-${{ env.CLEANED_RUN }}-${{ env.CLEANED_CLIENT }}.zip
-  combine-results:
-    needs: build
-    runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "8.0.x"
-
-      - name: Install python dependencies
-        run: pip install -r requirements.txt
-
-      - uses: actions/download-artifact@v3
-        with:
-          path: combined-results
-          merge-multiple: true
-
-      - name: Extract all result files
-        run: |
-          mkdir -p extracted-results
-          find combined-results -name '*.zip' -exec unzip -o {} -d extracted-results \;
-
-      - name: Process combined results
-        run: |
-          runs=${{ github.event.inputs.runs }}
-          images="${{ github.event.inputs.images }}"
-          if [ -z "$image" ]; then
-            python3 report_tables.py --resultsPath extracted-results/results/ --clients "${{ github.event.inputs.client }}" --testsPath ${{ github.event.inputs.test }} --runs $runs 
-            python3 report_html.py --resultsPath extracted-results/results/ --clients "${{ github.event.inputs.client }}" --testsPath ${{ github.event.inputs.test }} --runs $runs 
-          else
-            python3 report_tables.py --resultsPath extracted-results/results/ --clients "${{ github.event.inputs.client }}" --testsPath ${{ github.event.inputs.test }} --runs $runs --images $images
-            python3 report_html.py --resultsPath extracted-results/results/ --clients "${{ github.event.inputs.client }}" --testsPath ${{ github.event.inputs.test }} --runs $runs --images $images
-          fi
-
-      - name: Zip the results folder
-        run: |
-          zip -r reports.zip extracted-results/results/reports
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: reports
-          path: reports.zip
+          python3 report.py

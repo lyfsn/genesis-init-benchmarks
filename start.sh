@@ -25,6 +25,6 @@ nohup \
 ./run.sh \
   -t "tests/" \
   -c "erigon" \
-  -r 1 \
+  -r 4 \
   -o "results" \
   -s 1,100,1000
