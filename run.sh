@@ -129,7 +129,7 @@ for size in "${SIZES[@]}"; do
       echo "=== Interval $interval written to $output_file ==="
 
       cd "scripts/$client"
-      docker compose down -t 0
+      docker compose down gas-execution-client -t 0
       cd ../..
 
       # Record the second start time
