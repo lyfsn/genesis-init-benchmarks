@@ -111,7 +111,7 @@ def generate_html_report(processed_results, results_path, images, computer_spec)
         html_content += ('<table>'
                          '<thead>'
                          '<tr>'
-                         '<th>Size</th>'
+                         '<th>Genesis File Size</th>'
                          '<th>Part</th>'
                          '<th>Max</th>'
                          '<th>p50</th>'
