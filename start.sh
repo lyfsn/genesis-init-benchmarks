@@ -19,6 +19,7 @@ nohup \
   -c "nethermind" \
   -r 1 \
   -o "results"
+  -s 1,10
 
 
 ./run.sh \

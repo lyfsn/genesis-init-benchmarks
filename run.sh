@@ -7,9 +7,10 @@ CLIENTS="nethermind,geth,reth"
 RUNS=8
 IMAGES="default"
 OUTPUT_DIR="results"
+SIZES=("1" "100" "1000")
 
 # Parse command line arguments
-while getopts "t:w:c:r:i:o:" opt; do
+while getopts "t:w:c:r:i:o:s:" opt; do
   case $opt in
     t) TEST_PATH="$OPTARG" ;;
     w) WARMUP_FILE="$OPTARG" ;;
@@ -17,7 +18,8 @@ while getopts "t:w:c:r:i:o:" opt; do
     r) RUNS="$OPTARG" ;;
     i) IMAGES="$OPTARG" ;;
     o) OUTPUT_DIR="$OPTARG" ;;
-    *) echo "Usage: $0 [-t test_path] [-w warmup_file] [-c clients] [-r runs] [-i images] [-o output_dir]" >&2
+    s) IFS=',' read -ra SIZES <<< "$OPTARG" ;;
+    *) echo "Usage: $0 [-t test_path] [-w warmup_file] [-c clients] [-r runs] [-i images] [-o output_dir] [-s sizes]" >&2
        exit 1 ;;
   esac
 done
@@ -68,7 +70,6 @@ check_initialization_completed() {
 }
 
 mkdir -p $TEST_PATH/tmp
-SIZES=("1" "100" "1000")
 
 # Outer loop
 for size in "${SIZES[@]}"; do
@@ -168,4 +169,3 @@ for size in "${SIZES[@]}"; do
 done
 
 python3 report.py 
-
