@@ -8,11 +8,11 @@ on:
         default: 'tests/'
       clients:
         description: 'Comma-separated list of client names (e.g., nethermind,geth,reth,besu,erigon)'
-        default: 'nethermind,reth'
+        default: 'nethermind,geth,reth'
         required: true
       runs:
         description: 'Number of runs for the application'
-        default: 1
+        default: 8
       images:
         description: 'Comma-separated list of images for the clients (e.g., default,custom1,custom2)'
         default: 'default'
@@ -21,7 +21,7 @@ on:
         default: 'results'
       sizes:
         description: 'Comma-separated list of sizes (e.g., 1,100,1000)'
-        default: '1,10'
+        default: '1,100,1000'
 
 jobs:
   build:
@@ -31,10 +31,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
         with:
-          python-version: 3.x
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Install dependencies
         run: |
@@ -46,6 +53,10 @@ jobs:
           mkdir -p ${{ github.event.inputs.output_dir }}
           python3 computer_specs.py --output_folder ${{ github.event.inputs.output_dir }}
 
+      - name: Start Docker containers
+        run: |
+          docker-compose up -d
+ 
       - name: Run benchmarks
         run: |
           IFS=',' read -ra CLIENTS <<< "${{ github.event.inputs.clients }}"
