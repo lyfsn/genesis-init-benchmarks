@@ -48,3 +48,7 @@ jobs:
             -r "${{ github.event.inputs.runs }}" \
             -o "${{ github.event.inputs.output_dir }}" \
             -s "${{ github.event.inputs.sizes }}"
+
+      - name: Zip the reports
+        run: |
+          zip -r reports.zip results/reports
