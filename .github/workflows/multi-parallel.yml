@@ -8,11 +8,11 @@ on:
         default: 'tests/'
       clients:
         description: 'Comma-separated list of client names (e.g., nethermind,geth,reth,besu,erigon)'
-        default: 'nethermind,geth,reth'
+        default: 'nethermind,reth'
         required: true
       runs:
         description: 'Number of runs for the application'
-        default: 8
+        default: 1
       images:
         description: 'Comma-separated list of images for the clients (e.g., default,custom1,custom2)'
         default: 'default'
@@ -34,7 +34,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.10
+          python-version: 3.x
 
       - name: Install dependencies
         run: |
