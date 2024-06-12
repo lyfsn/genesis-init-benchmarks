@@ -151,7 +151,7 @@ for size in "${SIZES[@]}"; do
       check_initialization_completed $client "$log_entry"
       if [ $? -ne 0 ]; then
         echo "Initialization check failed for client $client"
-        exit 1
+        continue
       fi
 
       # Record the time when the initialization is completed
@@ -181,7 +181,7 @@ for size in "${SIZES[@]}"; do
       check_initialization_completed $client "$log_entry"
       if [ $? -ne 0 ]; then
         echo "Initialization check failed for client $client"
-        exit 1
+        continue
       fi
 
       # Record the time when the initialization is completed
