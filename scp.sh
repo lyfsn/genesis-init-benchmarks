@@ -1,0 +1,1 @@
+scp -r devg:/root/genesis-init-benchmarks/results ./results
