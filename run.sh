@@ -43,27 +43,39 @@ check_initialization_completed() {
   local retry_count=0
   local wait_time=0.5  # 500 milliseconds
 
+  # Start a background process to tail the logs
+  docker logs -f $container_name &
+  log_pid=$!
+
+  # Wait for the container to start
   until [ "$(docker ps -q -f name=$container_name)" ]; do
     echo "Waiting for container $container_name to start..."
     sleep $wait_time
     retry_count=$((retry_count+1))
     if [ $retry_count -ge $max_retries ]; then
       echo "Container $container_name did not start within the expected time."
+      kill $log_pid  # Terminate the background log tail process
       return 1
     fi
   done
 
-  echo "Waiting for log entry: $log_entry in $container_name..."
+  echo "Container $container_name has started."
+
+  # Reset retry count for log entry check
   retry_count=0
+  echo "Waiting for log entry: $log_entry in $container_name..."
   until docker logs $container_name 2>&1 | grep -q "$log_entry"; do
     sleep $wait_time
     retry_count=$((retry_count+1))
     if [ $retry_count -ge $max_retries ]; then
       echo "Log entry $log_entry not found in $container_name within the expected time."
+      kill $log_pid  # Terminate the background log tail process
       return 1
     fi
   done
 
+  echo "Log entry $log_entry found in $container_name."
+  kill $log_pid  # Terminate the background log tail process
   return 0
 }
 
