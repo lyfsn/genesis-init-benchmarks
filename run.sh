@@ -80,7 +80,7 @@ check_initialization_completed() {
       return 1
     fi
 
-    if (python -c "import sys; sys.exit($retry_count < $max_retries)" ); then
+    if [ $retry_count -ge $max_retries ]; then
       echo "Log entry $log_entry not found in $container_name within the expected time."
       return 1
     fi
@@ -98,27 +98,29 @@ monitor_memory_usage() {
   echo "-1" > "$output_file"
 
   {
-    while [ "$(docker ps -q -f name=$container_name)" ]; do
-      # Extract memory usage and remove any potential units (like MiB, GiB)
-      memory=$(docker stats --no-stream --format "{{.MemUsage}}" $container_name | awk '{print $1}')
-      echo "Raw memory usage: $memory"  # Debug output
+    while :; do
+      if [ "$(docker ps -q -f name=$container_name)" ]; then
+        # Extract memory usage and remove any potential units (like MiB, GiB)
+        memory=$(docker stats --no-stream --format "{{.MemUsage}}" $container_name | awk '{print $1}')
+        echo "Raw memory usage: $memory"  # Debug output
 
-      # Convert memory usage to MiB if necessary
-      if [[ $memory == *MiB ]]; then
-        memory=$(echo $memory | sed 's/[^0-9.]//g')
-      elif [[ $memory == *GiB ]]; then
-        memory=$(echo $memory | sed 's/[^0-9.]//g')
-        memory=$(echo "$memory * 1024" | bc)
-      else
-        memory=0
+        # Convert memory usage to MiB if necessary
+        if [[ $memory == *MiB ]]; then
+          memory=$(echo $memory | sed 's/[^0-9.]//g')
+        elif [[ $memory == *GiB ]]; then
+          memory=$(echo $memory | sed 's/[^0-9.]//g')
+          memory=$(echo "$memory * 1024" | bc)
+        else
+          memory=0
+        fi
+
+        echo "Converted memory usage in MiB: $memory"  # Debug output
+
+        if (( $(echo "$memory > $max_memory" | bc -l) )); then
+          max_memory=$memory
+        fi
+        echo "$max_memory" > "$output_file"  # Write the max memory to the file in each iteration
       fi
-
-      echo "Converted memory usage in MiB: $memory"  # Debug output
-
-      if (( $(echo "$memory > $max_memory" | bc -l) )); then
-        max_memory=$memory
-      fi
-      echo "$max_memory" > "$output_file"  # Write the max memory to the file in each iteration
       sleep 0.1
     done
   } &
