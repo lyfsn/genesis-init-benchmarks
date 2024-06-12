@@ -201,7 +201,7 @@ for size in "${SIZES[@]}"; do
         python3 setup_node.py --client $client --image $image
       fi
             
-      start_monitoring $client $run $size
+      start_monitoring $client $run $size &
 
       # After the initialization check and recording the interval, make sure to kill the memory monitoring process
       check_initialization_completed $client "$log_entry"
@@ -237,7 +237,7 @@ for size in "${SIZES[@]}"; do
         python3 setup_node.py --client $client --image $image
       fi
 
-      start_monitoring $client $run $size
+      start_monitoring $client $run $size &
 
       # Check initialization completion
       check_initialization_completed $client "$log_entry"
