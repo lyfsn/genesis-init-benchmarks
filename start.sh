@@ -33,4 +33,4 @@ nohup \
   -c "besu" \
   -r 1 \
   -o "results" \
-  -s 10
+  -s 1

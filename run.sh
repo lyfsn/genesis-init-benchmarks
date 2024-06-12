@@ -190,10 +190,12 @@ for size in "${SIZES[@]}"; do
             
       if [ "$client" = "nethermind" ] || [ "$client" = "besu" ]; then
         mem_output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M_mem.txt"
-        mem_pid=$(monitor_memory_usage "gas-execution-client" "$mem_output_file")
+        monitor_memory_usage "gas-execution-client" "$mem_output_file" &
+        log_pid=$!
       else 
         mem_output_file="${OUTPUT_DIR}/${client}_${run}_first_${size}M_mem.txt"
-        mem_pid=$(monitor_memory_usage "gas-execution-client-sync" "$mem_output_file")
+        monitor_memory_usage "gas-execution-client-sync" "$mem_output_file" &
+        log_pid=$!
       fi
 
       # After the initialization check and recording the interval, make sure to kill the memory monitoring process
