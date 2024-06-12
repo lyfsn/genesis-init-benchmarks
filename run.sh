@@ -179,20 +179,24 @@ for size in "${SIZES[@]}"; do
         mem_pid=$(monitor_memory_usage "gas-execution-client-sync" "$mem_output_file")
       fi
 
-      # Check initialization completion
+      # After the initialization check and recording the interval, make sure to kill the memory monitoring process
       check_initialization_completed $client "$log_entry"
       if [ $? -ne 0 ]; then
         echo "Initialization check failed for client $client"
+        kill $mem_pid  # Terminate the memory monitoring process
         continue
       fi
 
       # Record the time when the initialization is completed
       initialization_time=$(($(date +%s%N) / 1000000))
       interval=$((initialization_time - start_time))
-      
+
       output_file="${OUTPUT_DIR}/${client}_${run}_first_${size}M.txt"
       echo "$interval" > "$output_file"
       echo "=== Interval $interval written to $output_file ==="
+
+      # Kill the memory monitoring process after the interval is recorded
+      kill $mem_pid
 
       cd "scripts/$client"
       docker compose down execution -t 0
@@ -209,25 +213,38 @@ for size in "${SIZES[@]}"; do
         python3 setup_node.py --client $client --image $image
       fi
 
+      if [ "$client" = "nethermind" ] || [ "$client" = "besu" ]; then
+        mem_output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M_mem.txt"
+        mem_pid=$(monitor_memory_usage "gas-execution-client" "$mem_output_file")
+      else 
+        mem_output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M_mem.txt"
+        mem_pid=$(monitor_memory_usage "gas-execution-client-sync" "$mem_output_file")
+      fi
+
       # Check initialization completion
       check_initialization_completed $client "$log_entry"
       if [ $? -ne 0 ]; then
         echo "Initialization check failed for client $client"
+        kill $mem_pid  # Terminate the memory monitoring process
         continue
       fi
 
       # Record the time when the initialization is completed
       initialization_time=$(($(date +%s%N) / 1000000))
       interval=$((initialization_time - start_time))
-      
+
       output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M.txt"
       echo "$interval" > "$output_file"
       echo "=== Interval $interval written to $output_file ==="
+
+      # Kill the memory monitoring process after the interval is recorded
+      kill $mem_pid
 
       cd "scripts/$client"
       docker compose down -t 0
       sudo rm -rf execution-data
       cd ../..
+
     done
   done
 done
