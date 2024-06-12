@@ -111,12 +111,31 @@ monitor_memory_usage() {
     done
     echo "$max_memory" > "$output_file"
   ) &
-  mem_pid=$!
-
-  echo $mem_pid
+  echo $!  # Return the PID of the background process
 }
 
 mkdir -p $TEST_PATH/tmp
+
+start_monitoring() {
+  local client=$1
+  local run=$2
+  local size=$3
+  if [ "$client" = "nethermind" ] || [ "$client" = "besu" ]; then
+    mem_output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M_mem.txt"
+    mem_pid=$(monitor_memory_usage "gas-execution-client" "$mem_output_file")
+  else 
+    mem_output_file="${OUTPUT_DIR}/${client}_${run}_first_${size}M_mem.txt"
+    mem_pid=$(monitor_memory_usage "gas-execution-client-sync" "$mem_output_file")
+  fi
+  echo "Started memory monitoring with PID $mem_pid"
+}
+
+stop_monitoring() {
+  if [ -n "$mem_pid" ]; then
+    kill $mem_pid
+    echo "Stopped memory monitoring with PID $mem_pid"
+  fi
+}
 
 # Outer loop
 for size in "${SIZES[@]}"; do
@@ -173,21 +192,13 @@ for size in "${SIZES[@]}"; do
         python3 setup_node.py --client $client --image $image
       fi
             
-      if [ "$client" = "nethermind" ] || [ "$client" = "besu" ]; then
-        mem_output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M_mem.txt"
-        monitor_memory_usage "gas-execution-client" "$mem_output_file" &
-        mem_pid=$!
-      else 
-        mem_output_file="${OUTPUT_DIR}/${client}_${run}_first_${size}M_mem.txt"
-        monitor_memory_usage "gas-execution-client-sync" "$mem_output_file" &
-        mem_pid=$!
-      fi
+      start_monitoring $client $run $size
 
       # After the initialization check and recording the interval, make sure to kill the memory monitoring process
       check_initialization_completed $client "$log_entry"
       if [ $? -ne 0 ]; then
         echo "Initialization check failed for client $client"
-        kill $mem_pid  # Terminate the memory monitoring process
+        stop_monitoring
         continue
       fi
 
@@ -200,7 +211,7 @@ for size in "${SIZES[@]}"; do
       echo "=== Interval $interval written to $output_file ==="
 
       # Kill the memory monitoring process after the interval is recorded
-      kill $mem_pid
+      stop_monitoring
 
       cd "scripts/$client"
       docker compose stop -t 0
@@ -217,21 +228,13 @@ for size in "${SIZES[@]}"; do
         python3 setup_node.py --client $client --image $image
       fi
 
-      if [ "$client" = "nethermind" ] || [ "$client" = "besu" ]; then
-        mem_output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M_mem.txt"
-        monitor_memory_usage "gas-execution-client" "$mem_output_file" &
-        mem_pid=$!
-      else 
-        mem_output_file="${OUTPUT_DIR}/${client}_${run}_first_${size}M_mem.txt"
-        monitor_memory_usage "gas-execution-client-sync" "$mem_output_file" &
-        mem_pid=$!
-      fi
+      start_monitoring $client $run $size
 
       # Check initialization completion
       check_initialization_completed $client "$log_entry"
       if [ $? -ne 0 ]; then
         echo "Initialization check failed for client $client"
-        kill $mem_pid  # Terminate the memory monitoring process
+        stop_monitoring
         continue
       fi
 
@@ -244,7 +247,7 @@ for size in "${SIZES[@]}"; do
       echo "=== Interval $interval written to $output_file ==="
 
       # Kill the memory monitoring process after the interval is recorded
-      kill $mem_pid
+      stop_monitoring
 
       cd "scripts/$client"
       docker compose down -t 0

@@ -4,9 +4,9 @@ services:
     stop_grace_period: 30m
     container_name: gas-execution-client
     image: ${EC_IMAGE_VERSION}
-    mem_limit: 16g
+    mem_limit: 32g
     environment:
-      - BESU_OPTS=-Xmx16g
+      - BESU_OPTS=-Xmx32g
     networks:
     - gas
     volumes:
