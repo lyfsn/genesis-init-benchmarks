@@ -212,7 +212,7 @@ for size in "${SIZES[@]}"; do
       kill $mem_pid
 
       cd "scripts/$client"
-      docker compose down execution -t 0
+      docker compose stop -t 0
       cd ../..
 
       # Record the second start time
