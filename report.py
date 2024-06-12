@@ -39,9 +39,10 @@ def get_client_results(results_path):
                 try:
                     run = int(run)
                     with open(os.path.join(results_path, filename), 'r') as file:
-                        value = int(file.read().strip())
+                        content = file.read().strip()
+                        value = float(content) if is_mem else int(content)
                 except ValueError:
-                    print(f"Skipping file {filename} due to invalid content")
+                    print(f"Skipping file {filename} due to invalid content: {content}")
                     continue
                 except Exception as e:
                     print(f"Error reading file {filename}: {e}")
