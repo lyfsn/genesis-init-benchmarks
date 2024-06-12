@@ -1,6 +1,9 @@
 import json
 import random
 import os
+import sys
+import threading
+from queue import Queue
 
 def generate_random_address():
     return '0x' + ''.join(random.choices('0123456789abcdef', k=40))
@@ -27,22 +30,38 @@ def create_large_chainspec(input_file, output_file, target_size, initial_batch_s
     average_account_size = estimate_account_size()
     estimated_total_accounts_needed = (target_size - current_size) // average_account_size
 
-    def add_accounts(batch_size):
+    def add_accounts(batch_size, queue):
         new_accounts = {}
         for _ in range(batch_size):
             new_address = generate_random_address()
             new_balance = generate_random_balance()
             new_accounts[new_address] = {"balance": new_balance}
-        return new_accounts
+        queue.put(new_accounts)
+
+    def worker(batch_size, queue):
+        while current_size < target_size:
+            add_accounts(batch_size, queue)
+
+    batch_size = initial_batch_size
+    queue = Queue()
+    num_threads = 4
+    threads = []
+
+    for _ in range(num_threads):
+        thread = threading.Thread(target=worker, args=(batch_size, queue))
+        thread.start()
+        threads.append(thread)
 
     while current_size < target_size:
-        accounts_to_add = add_accounts(initial_batch_size)
-        accounts.update(accounts_to_add)
-        current_size += average_account_size * initial_batch_size
-
+        new_accounts = queue.get()
+        accounts.update(new_accounts)
+        current_size += average_account_size * batch_size
         print(f"Current estimated size: {current_size / 1024 / 1024:.2f} MB")
         if current_size >= target_size:
             break
+
+    for thread in threads:
+        thread.join()
 
     chainspec['accounts'] = accounts
 
@@ -55,7 +74,6 @@ def create_large_chainspec(input_file, output_file, target_size, initial_batch_s
         print(f"Error writing to {output_file}: {e}")
 
 if __name__ == "__main__":
-    import sys
     if len(sys.argv) != 4:
         print("Usage: python script.py <input_file> <output_file> <target_size_in_MB>")
         sys.exit(1)
