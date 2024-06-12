@@ -91,7 +91,7 @@ def ms_to_readable_time(ms):
     return f"{minutes}min{seconds}s"
 
 def mem_to_readable(mem):
-    if mem is None:
+    if mem is None or mem == 0:
         return ""
     return f" ({mem}M)"
 
