@@ -95,7 +95,7 @@ monitor_memory_usage() {
   local container_name=$1
   local output_file=$2
   local max_memory=0
-  echo "0" > "$output_file"
+  echo "-1" > "$output_file"
 
   {
     while [ "$(docker ps -q -f name=$container_name)" ]; do
@@ -110,17 +110,17 @@ monitor_memory_usage() {
         memory=$(echo $memory | sed 's/[^0-9.]//g')
         memory=$(echo "$memory * 1024" | bc)
       else
-        memory=-1
+        memory=0
       fi
 
       echo "Converted memory usage in MiB: $memory"  # Debug output
 
       if (( $(echo "$memory > $max_memory" | bc -l) )); then
         max_memory=$memory
+        echo "$max_memory" > "$output_file"
       fi
       sleep 0.1
     done
-    echo "$max_memory" > "$output_file"
   } &
   echo $!
 }
