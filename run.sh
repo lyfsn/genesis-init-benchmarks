@@ -107,7 +107,7 @@ monitor_memory_usage() {
         memory=$(echo $memory | sed 's/[^0-9.]//g')
       elif [[ $memory == *GiB ]]; then
         memory=$(echo $memory | sed 's/[^0-9.]//g')
-        memory=$(echo "$memory * 1024" | bc) # Convert GiB to MiB
+        memory=$(echo "$memory * 1024" | bc) 
       else
         memory=0
       fi
@@ -115,7 +115,7 @@ monitor_memory_usage() {
       if (( $(echo "$memory > $max_memory" | bc -l) )); then
         max_memory=$memory
       fi
-      sleep 0.5
+      sleep 0.1
     done
     echo "$max_memory" > "$output_file"
   ) &
