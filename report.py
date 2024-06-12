@@ -97,7 +97,7 @@ def ms_to_readable_time(ms):
 def mem_to_readable(mem):
     if mem is None or mem == 0:
         return ""
-    return f" ({mem}M)"
+    return f" ({mem / 1024:.2f} GB)"
 
 def generate_html_report(processed_results, results_path, images, computer_spec):
     html_content = ('<!DOCTYPE html>'
