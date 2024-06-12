@@ -3,7 +3,6 @@ services:
   execution:
     stop_grace_period: 30m
     container_name: gas-execution-client
-    # restart: unless-stopped
     image: ${EC_IMAGE_VERSION}
     mem_limit: 32g
     environment:

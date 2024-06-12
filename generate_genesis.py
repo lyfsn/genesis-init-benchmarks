@@ -38,7 +38,7 @@ def create_large_genesis(input_file, output_file, target_size):
             new_accounts[new_address] = {"balance": new_balance}
         return new_accounts
 
-    batch_size = 10000  # 增加批处理大小
+    batch_size = 10000 
     while current_size < target_size:
         accounts_to_add = add_accounts(batch_size)
         accounts.update(accounts_to_add)
