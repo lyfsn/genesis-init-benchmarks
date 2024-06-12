@@ -39,7 +39,7 @@ check_initialization_completed() {
   local client=$1
   local log_entry=$2
   local container_name="gas-execution-client"
-  local max_retries=1024
+  local max_retries=7200
   local retry_count=0
   local wait_time=0.5  # 500 milliseconds
 
@@ -87,7 +87,7 @@ monitor_memory_usage() {
   local output_file=$2
   local max_memory=0
   echo "0" > "$output_file"
-  
+
   # Monitor memory usage in the background
   (
     while [ "$(docker ps -q -f name=$container_name)" ]; do
