@@ -105,14 +105,25 @@ monitor_memory_usage() {
   # Monitor memory usage in the background
   (
     while [ "$(docker ps -q -f name=$container_name)" ]; do
+      # Extract memory usage and remove any potential units (like MiB, GiB)
       memory=$(docker stats --no-stream --format "{{.MemUsage}}" $container_name | awk '{print $1}')
-      memory=${memory%M}
+      
+      # Convert memory usage to MiB if necessary
+      if [[ $memory == *MiB ]]; then
+        memory=$(echo $memory | sed 's/[^0-9.]//g')
+      elif [[ $memory == *GiB ]]; then
+        memory=$(echo $memory | sed 's/[^0-9.]//g')
+        memory=$(echo "$memory * 1024" | bc) # Convert GiB to MiB
+      else
+        memory=0
+      fi
+
       if (( $(echo "$memory > $max_memory" | bc -l) )); then
         max_memory=$memory
       fi
       sleep 0.5
     done
-    echo "Peak memory usage: $max_memory MB" > "$output_file"
+    echo "Peak memory usage: $max_memory MiB" > "$output_file"
   ) &
   mem_pid=$!
 
