@@ -117,8 +117,8 @@ monitor_memory_usage() {
 
       if (( $(echo "$memory > $max_memory" | bc -l) )); then
         max_memory=$memory
-        echo "$max_memory" > "$output_file"
       fi
+      echo "$max_memory" > "$output_file"  # Write the max memory to the file in each iteration
       sleep 0.1
     done
   } &
