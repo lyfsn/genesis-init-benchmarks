@@ -8,17 +8,17 @@ on:
         default: 'tests/'
       clients:
         description: 'Comma-separated list of client names (e.g., nethermind,geth,reth,besu,erigon)'
-        default: 'nethermind,reth,besu'
+        default: 'nethermind,reth,besu,erigon,geth'
         required: true
       runs:
         description: 'Number of runs for the application'
-        default: 1
+        default: 8
       output_dir:
         description: 'Output directory for results'
         default: 'results'
       sizes:
         description: 'Comma-separated list of sizes (e.g., 1,100,1000)'
-        default: '1,10'
+        default: '1,64,512,1024,2048'
 
 jobs:
   build:
