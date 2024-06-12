@@ -117,7 +117,7 @@ monitor_memory_usage() {
       fi
       sleep 0.5
     done
-    echo "Peak memory usage: $max_memory MiB" > "$output_file"
+    echo "$max_memory" > "$output_file"
   ) &
   mem_pid=$!
 
