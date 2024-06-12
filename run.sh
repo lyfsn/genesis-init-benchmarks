@@ -196,6 +196,8 @@ for size in "${SIZES[@]}"; do
       # Record the start time
       start_time=$(($(date +%s%N) / 1000000))
 
+      start_monitoring $client $run $size &
+
       if [ -z "$image" ]; then
         echo "Image input is empty, using default image."
         python3 setup_node.py --client $client
@@ -203,8 +205,6 @@ for size in "${SIZES[@]}"; do
         echo "Using provided image: $image for $client"
         python3 setup_node.py --client $client --image $image
       fi
-            
-      start_monitoring $client $run $size &
 
       # After the initialization check and recording the interval, make sure to kill the memory monitoring process
       check_initialization_completed $client "$log_entry"
@@ -232,6 +232,8 @@ for size in "${SIZES[@]}"; do
       # Record the second start time
       start_time=$(($(date +%s%N) / 1000000))
 
+      start_monitoring $client $run $size &
+
       if [ -z "$image" ]; then
         echo "Image input is empty, using default image."
         python3 setup_node.py --client $client
@@ -239,8 +241,6 @@ for size in "${SIZES[@]}"; do
         echo "Using provided image: $image for $client"
         python3 setup_node.py --client $client --image $image
       fi
-
-      start_monitoring $client $run $size &
 
       # Check initialization completion
       check_initialization_completed $client "$log_entry"
