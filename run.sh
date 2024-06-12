@@ -42,14 +42,23 @@ check_initialization_completed() {
   local max_retries=7200
   local retry_count=0
   local wait_time=0.5  # 500 milliseconds
+  local max_wait_time=120  # 2 minutes
+  local container_check_retries=12
+  local container_retry_count=0
 
-  # Function to check if the container is still running
+  # Function to check if the container is still running with retries
   check_container_running() {
-    if [ -z "$(docker ps -q -f name=$container_name)" ]; then
-      echo "Container $container_name has stopped unexpectedly."
-      return 1
-    fi
-    return 0
+    while [ $container_retry_count -lt $container_check_retries ]; do
+      if [ -z "$(docker ps -q -f name=$container_name)" ]; then
+        echo "Container $container_name has stopped unexpectedly. Retrying... ($((container_retry_count + 1))/$container_check_retries)"
+        container_retry_count=$((container_retry_count + 1))
+        sleep $max_wait_time
+      else
+        return 0
+      fi
+    done
+    echo "Container $container_name has stopped unexpectedly after $container_check_retries retries."
+    return 1
   }
 
   check_container_running

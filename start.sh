@@ -31,6 +31,15 @@ nohup \
   -s 1,64,512,1024 \
   > output.log 2>&1 &
 
+nohup \
+  ./run.sh \
+  -t "tests/" \
+  -c "nethermind,geth,reth,erigon,besu" \
+  -r 1 \
+  -o "results" \
+  -s 1,2,3 \
+  > output.log 2>&1 &
+
 ./run.sh \
   -t "tests/" \
   -c "nethermind" \
