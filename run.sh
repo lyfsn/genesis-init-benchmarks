@@ -43,16 +43,10 @@ check_initialization_completed() {
   local retry_count=0
   local wait_time=0.5  # 500 milliseconds
 
-  # Start a background process to tail the logs
-  docker logs -f $container_name > "$OUTPUT_DIR/${client}_log.txt" &
-  log_pid=$!
-
-
   # Function to check if the container is still running
   check_container_running() {
     if [ -z "$(docker ps -q -f name=$container_name)" ]; then
       echo "Container $container_name has stopped unexpectedly."
-      kill $log_pid 
       return 1
     fi
     return 0
@@ -68,7 +62,7 @@ check_initialization_completed() {
   # Reset retry count for log entry check
   retry_count=0
   echo "Waiting for log entry: $log_entry in $container_name..."
-  until grep -q "$log_entry" "$OUTPUT_DIR/${client}_log.txt"; do
+  until docker logs $container_name 2>&1 | grep -q "$log_entry"; do
     sleep $wait_time
     retry_count=$((retry_count+1))
 
@@ -79,14 +73,11 @@ check_initialization_completed() {
 
     if [ $retry_count -ge $max_retries ]; then
       echo "Log entry $log_entry not found in $container_name within the expected time."
-      kill $log_pid 
       return 1
     fi
   done
 
   echo "Log entry $log_entry found in $container_name."
-  kill $log_pid 
-  rm "$OUTPUT_DIR/${client}_log.txt"
   return 0
 }
 
@@ -124,7 +115,6 @@ monitor_memory_usage() {
   echo $mem_pid
 }
 
-
 mkdir -p $TEST_PATH/tmp
 
 # Outer loop
@@ -151,11 +141,11 @@ for size in "${SIZES[@]}"; do
 
   # Run benchmarks
   for run in $(seq 1 $RUNS); do
-    for i in "${!CLIENT_ARRAY[@]}"; do
-      echo "=== Run round $run - Client ${CLIENT_ARRAY[$i]} - Image ${IMAGE_ARRAY[$i]} ==="
+    for I in "${!CLIENT_ARRAY[@]}"; do
+      echo "=== Run round $run - Client ${CLIENT_ARRAY[$I]} - Image ${IMAGE_ARRAY[$I]} ==="
 
-      client="${CLIENT_ARRAY[$i]}"
-      image="${IMAGE_ARRAY[$i]}"
+      client="${CLIENT_ARRAY[$I]}"
+      image="${IMAGE_ARRAY[$I]}"
 
       # Define the log entry based on the client
       case $client in
