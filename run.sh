@@ -61,12 +61,29 @@ check_initialization_completed() {
 
   echo "Container $container_name has started."
 
+  # Function to check if the container is still running
+  check_container_running() {
+    if [ -z "$(docker ps -q -f name=$container_name)" ]; then
+      echo "Container $container_name has stopped unexpectedly."
+      kill $log_pid  # Terminate the background log tail process
+      return 1
+    fi
+    return 0
+  }
+
   # Reset retry count for log entry check
   retry_count=0
   echo "Waiting for log entry: $log_entry in $container_name..."
   until docker logs $container_name 2>&1 | grep -q "$log_entry"; do
     sleep $wait_time
     retry_count=$((retry_count+1))
+
+    # Check if the container is still running
+    check_container_running
+    if [ $? -ne 0 ]; then
+      return 1
+    fi
+
     if [ $retry_count -ge $max_retries ]; then
       echo "Log entry $log_entry not found in $container_name within the expected time."
       kill $log_pid  # Terminate the background log tail process
