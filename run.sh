@@ -80,7 +80,7 @@ check_initialization_completed() {
       return 1
     fi
 
-    if [ $retry_count -ge $max_retries ]; then
+    if (python -c "import sys; sys.exit($retry_count < $max_retries)" ); then
       echo "Log entry $log_entry not found in $container_name within the expected time."
       return 1
     fi
@@ -230,7 +230,6 @@ for size in "${SIZES[@]}"; do
 
       # Record the second start time
       start_time=$(($(date +%s%N) / 1000000))
-
       start_monitoring $client $run $size &
 
       if [ -z "$image" ]; then
@@ -264,9 +263,8 @@ for size in "${SIZES[@]}"; do
       docker compose down -t 0
       sudo rm -rf execution-data
       cd ../..
-
     done
   done
 done
 
-python3 report.py 
+python3 report.py
