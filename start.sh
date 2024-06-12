@@ -9,7 +9,7 @@ nohup \
   -c "nethermind,geth,reth,erigon,besu" \
   -r 8 \
   -o "results" \
-  -s 1,10,100,1000,2000 \
+  -s 1,64,512,1024,2048 \
   > output.log 2>&1 &
 
 ./run.sh \
