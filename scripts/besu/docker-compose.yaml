@@ -5,6 +5,7 @@ services:
     container_name: gas-execution-client
     restart: unless-stopped
     image: ${EC_IMAGE_VERSION}
+    mem_limit: 32g
     environment:
       - BESU_OPTS=-Xmx32g
     networks:
