@@ -50,6 +50,13 @@ nohup \
 
 ./run.sh \
   -t "tests/" \
+  -c "geth" \
+  -r 1 \
+  -o "results" \
+  -s 1000
+
+./run.sh \
+  -t "tests/" \
   -c "erigon" \
   -r 4 \
   -o "results" \

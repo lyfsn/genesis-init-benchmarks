@@ -102,16 +102,19 @@ monitor_memory_usage() {
     while [ "$(docker ps -q -f name=$container_name)" ]; do
       # Extract memory usage and remove any potential units (like MiB, GiB)
       memory=$(docker stats --no-stream --format "{{.MemUsage}}" $container_name | awk '{print $1}')
-      
+      echo "Raw memory usage: $memory"  # Debug output
+
       # Convert memory usage to MiB if necessary
       if [[ $memory == *MiB ]]; then
         memory=$(echo $memory | sed 's/[^0-9.]//g')
       elif [[ $memory == *GiB ]]; then
         memory=$(echo $memory | sed 's/[^0-9.]//g')
-        memory=$(echo "$memory * 1024" | bc) 
+        memory=$(echo "$memory * 1024" | bc)
       else
-        memory=0
+        memory=-1
       fi
+
+      echo "Converted memory usage in MiB: $memory"  # Debug output
 
       if (( $(echo "$memory > $max_memory" | bc -l) )); then
         max_memory=$memory
@@ -159,9 +162,9 @@ for size in "${SIZES[@]}"; do
   echo "New size calculated: $new_size"
 
   # Generate chainspec, genesis, and besu files
-  python3 generate_chainspec.py $TEST_PATH/chainspec.json $TEST_PATH/tmp/chainspec.json $new_size
-  python3 generate_genesis.py $TEST_PATH/genesis.json $TEST_PATH/tmp/genesis.json $new_size
-  python3 generate_besu.py $TEST_PATH/besu.json $TEST_PATH/tmp/besu.json $new_size
+  # python3 generate_chainspec.py $TEST_PATH/chainspec.json $TEST_PATH/tmp/chainspec.json $new_size
+  # python3 generate_genesis.py $TEST_PATH/genesis.json $TEST_PATH/tmp/genesis.json $new_size
+  # python3 generate_besu.py $TEST_PATH/besu.json $TEST_PATH/tmp/besu.json $new_size
 
   docker stop gas-execution-client
   docker stop gas-execution-client-sync
