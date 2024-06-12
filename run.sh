@@ -173,10 +173,10 @@ for size in "${SIZES[@]}"; do
             
       if [ "$client" = "nethermind" ] || [ "$client" = "besu" ]; then
         mem_output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M_mem.txt"
-        mem_pid=$(monitor_memory_usage "gas-execution-client" "gas-execution-client-sync" "$mem_output_file")
+        mem_pid=$(monitor_memory_usage "gas-execution-client" "$mem_output_file")
       else 
         mem_output_file="${OUTPUT_DIR}/${client}_${run}_first_${size}M_mem.txt"
-        mem_pid=$(monitor_memory_usage "gas-execution-client-sync" "gas-execution-client" "$mem_output_file")
+        mem_pid=$(monitor_memory_usage "gas-execution-client-sync" "$mem_output_file")
       fi
 
       # Check initialization completion
