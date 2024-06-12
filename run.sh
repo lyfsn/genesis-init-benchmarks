@@ -96,6 +96,30 @@ check_initialization_completed() {
   return 0
 }
 
+# Function to monitor and record peak memory usage of a Docker container
+monitor_memory_usage() {
+  local container_name=$1
+  local output_file=$2
+  local max_memory=0
+
+  # Monitor memory usage in the background
+  (
+    while [ "$(docker ps -q -f name=$container_name)" ]; do
+      memory=$(docker stats --no-stream --format "{{.MemUsage}}" $container_name | awk '{print $1}')
+      memory=${memory%M}
+      if (( $(echo "$memory > $max_memory" | bc -l) )); then
+        max_memory=$memory
+      fi
+      sleep 0.5
+    done
+    echo "Peak memory usage: $max_memory MB" > "$output_file"
+  ) &
+  mem_pid=$!
+
+  echo $mem_pid
+}
+
+
 mkdir -p $TEST_PATH/tmp
 
 # Outer loop
@@ -145,6 +169,14 @@ for size in "${SIZES[@]}"; do
       else
         echo "Using provided image: $image for $client"
         python3 setup_node.py --client $client --image $image
+      fi
+            
+      if [ "$client" = "nethermind" ] || [ "$client" = "besu" ]; then
+        mem_output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M_mem.txt"
+        mem_pid=$(monitor_memory_usage "gas-execution-client" "gas-execution-client-sync" "$mem_output_file")
+      else 
+        mem_output_file="${OUTPUT_DIR}/${client}_${run}_first_${size}M_mem.txt"
+        mem_pid=$(monitor_memory_usage "gas-execution-client-sync" "gas-execution-client" "$mem_output_file")
       fi
 
       # Check initialization completion
