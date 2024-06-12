@@ -97,30 +97,32 @@ monitor_memory_usage() {
   local max_memory=0
   echo "0" > "$output_file"
 
-  while [ "$(docker ps -q -f name=$container_name)" ]; do
-    # Extract memory usage and remove any potential units (like MiB, GiB)
-    memory=$(docker stats --no-stream --format "{{.MemUsage}}" $container_name | awk '{print $1}')
-    echo "Raw memory usage: $memory"  # Debug output
+  {
+    while [ "$(docker ps -q -f name=$container_name)" ]; do
+      # Extract memory usage and remove any potential units (like MiB, GiB)
+      memory=$(docker stats --no-stream --format "{{.MemUsage}}" $container_name | awk '{print $1}')
+      echo "Raw memory usage: $memory"  # Debug output
 
-    # Convert memory usage to MiB if necessary
-    if [[ $memory == *MiB ]]; then
-      memory=$(echo $memory | sed 's/[^0-9.]//g')
-    elif [[ $memory == *GiB ]]; then
-      memory=$(echo $memory | sed 's/[^0-9.]//g')
-      memory=$(echo "$memory * 1024" | bc)
-    else
-      memory=-1
-    fi
+      # Convert memory usage to MiB if necessary
+      if [[ $memory == *MiB ]]; then
+        memory=$(echo $memory | sed 's/[^0-9.]//g')
+      elif [[ $memory == *GiB ]]; then
+        memory=$(echo $memory | sed 's/[^0-9.]//g')
+        memory=$(echo "$memory * 1024" | bc)
+      else
+        memory=-1
+      fi
 
-    echo "Converted memory usage in MiB: $memory"  # Debug output
+      echo "Converted memory usage in MiB: $memory"  # Debug output
 
-    if (( $(echo "$memory > $max_memory" | bc -l) )); then
-      max_memory=$memory
-    fi
-    sleep 0.1
-  done
-  echo "$max_memory" > "$output_file"
-  echo $! 
+      if (( $(echo "$memory > $max_memory" | bc -l) )); then
+        max_memory=$memory
+      fi
+      sleep 0.1
+    done
+    echo "$max_memory" > "$output_file"
+  } &
+  echo $!
 }
 
 mkdir -p $TEST_PATH/tmp
