@@ -44,7 +44,7 @@ check_initialization_completed() {
   local wait_time=0.5  # 500 milliseconds
 
   # Start a background process to tail the logs
-  docker logs -f $container_name &
+  docker logs -f $container_name > "$OUTPUT_DIR/${client}_log.txt" &
   log_pid=$!
 
   # Wait for the container to start
@@ -74,7 +74,7 @@ check_initialization_completed() {
   # Reset retry count for log entry check
   retry_count=0
   echo "Waiting for log entry: $log_entry in $container_name..."
-  until docker logs $container_name 2>&1 | grep -q "$log_entry"; do
+  until grep -q "$log_entry" "$OUTPUT_DIR/${client}_log.txt"; do
     sleep $wait_time
     retry_count=$((retry_count+1))
 
