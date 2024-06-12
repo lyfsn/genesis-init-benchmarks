@@ -47,29 +47,23 @@ check_initialization_completed() {
   docker logs -f $container_name > "$OUTPUT_DIR/${client}_log.txt" &
   log_pid=$!
 
-  # Wait for the container to start
-  until [ "$(docker ps -q -f name=$container_name)" ]; do
-    echo "Waiting for container $container_name to start..."
-    sleep $wait_time
-    retry_count=$((retry_count+1))
-    if [ $retry_count -ge $max_retries ]; then
-      echo "Container $container_name did not start within the expected time."
-      kill $log_pid  # Terminate the background log tail process
-      return 1
-    fi
-  done
-
-  echo "Container $container_name has started."
 
   # Function to check if the container is still running
   check_container_running() {
     if [ -z "$(docker ps -q -f name=$container_name)" ]; then
       echo "Container $container_name has stopped unexpectedly."
-      kill $log_pid  # Terminate the background log tail process
+      kill $log_pid 
       return 1
     fi
     return 0
   }
+
+  check_container_running
+  if [ $? -ne 0 ]; then
+    return 1
+  fi
+
+  echo "Container $container_name has started."
 
   # Reset retry count for log entry check
   retry_count=0
@@ -78,7 +72,6 @@ check_initialization_completed() {
     sleep $wait_time
     retry_count=$((retry_count+1))
 
-    # Check if the container is still running
     check_container_running
     if [ $? -ne 0 ]; then
       return 1
@@ -86,13 +79,14 @@ check_initialization_completed() {
 
     if [ $retry_count -ge $max_retries ]; then
       echo "Log entry $log_entry not found in $container_name within the expected time."
-      kill $log_pid  # Terminate the background log tail process
+      kill $log_pid 
       return 1
     fi
   done
 
   echo "Log entry $log_entry found in $container_name."
-  kill $log_pid  # Terminate the background log tail process
+  kill $log_pid 
+  rm "$OUTPUT_DIR/${client}_log.txt"
   return 0
 }
 
@@ -191,11 +185,11 @@ for size in "${SIZES[@]}"; do
       if [ "$client" = "nethermind" ] || [ "$client" = "besu" ]; then
         mem_output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M_mem.txt"
         monitor_memory_usage "gas-execution-client" "$mem_output_file" &
-        log_pid=$!
+        mem_pid=$!
       else 
         mem_output_file="${OUTPUT_DIR}/${client}_${run}_first_${size}M_mem.txt"
         monitor_memory_usage "gas-execution-client-sync" "$mem_output_file" &
-        log_pid=$!
+        mem_pid=$!
       fi
 
       # After the initialization check and recording the interval, make sure to kill the memory monitoring process
@@ -234,10 +228,12 @@ for size in "${SIZES[@]}"; do
 
       if [ "$client" = "nethermind" ] || [ "$client" = "besu" ]; then
         mem_output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M_mem.txt"
-        mem_pid=$(monitor_memory_usage "gas-execution-client" "$mem_output_file")
+        monitor_memory_usage "gas-execution-client" "$mem_output_file" &
+        mem_pid=$!
       else 
-        mem_output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M_mem.txt"
-        mem_pid=$(monitor_memory_usage "gas-execution-client-sync" "$mem_output_file")
+        mem_output_file="${OUTPUT_DIR}/${client}_${run}_first_${size}M_mem.txt"
+        monitor_memory_usage "gas-execution-client-sync" "$mem_output_file" &
+        mem_pid=$!
       fi
 
       # Check initialization completion
