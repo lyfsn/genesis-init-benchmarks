@@ -126,7 +126,13 @@ mkdir -p $TEST_PATH/tmp
 for size in "${SIZES[@]}"; do
   echo "=== Running benchmarks for size ${size}M ==="
   
-  new_size=$(echo "($size / 1.2 + 0.5)/1" | bc)
+  echo "Calculating new size for $size"
+  new_size=$(echo "scale=2; ($size / 1.2 + 0.5)/1" | bc)
+  if [ $? -ne 0 ]; then
+    echo "Error calculating new size with bc"
+    exit 1
+  fi
+  echo "New size calculated: $new_size"
 
   # Generate chainspec, genesis, and besu files
   python3 generate_chainspec.py $TEST_PATH/chainspec.json $TEST_PATH/tmp/chainspec.json $new_size
