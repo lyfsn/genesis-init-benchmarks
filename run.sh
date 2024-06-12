@@ -86,7 +86,8 @@ monitor_memory_usage() {
   local container_name=$1
   local output_file=$2
   local max_memory=0
-
+  echo "0" > "$output_file"
+  
   # Monitor memory usage in the background
   (
     while [ "$(docker ps -q -f name=$container_name)" ]; do

@@ -30,9 +30,12 @@ def get_client_results(results_path):
     for filename in os.listdir(results_path):
         if filename.endswith('.txt') and filename != "computer_specs.txt":
             parts = filename.replace('.txt', '').split('_')
-            if len(parts) == 4 or (len(parts) == 5 and parts[4] == 'mem'):
-                client, run, part, size = parts[:4]
-                is_mem = len(parts) == 5 and parts[4] == 'mem'
+            if len(parts) == 4 or (len(parts) == 5 and parts[-1] == 'mem'):
+                client = parts[0]
+                run = parts[1]
+                part = parts[2]
+                size = parts[3]
+                is_mem = parts[-1] == 'mem'
                 try:
                     run = int(run)
                     with open(os.path.join(results_path, filename), 'r') as file:
@@ -43,7 +46,7 @@ def get_client_results(results_path):
                 except Exception as e:
                     print(f"Error reading file {filename}: {e}")
                     continue
-                client = client  # Keep only the client name, ignore run
+
                 if client not in client_results:
                     client_results[client] = {}
                 if size not in client_results[client]:
