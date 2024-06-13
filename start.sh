@@ -27,3 +27,10 @@ nohup \
   -r 1 \
   -o "results/memory" \
   -s 1
+
+./runMemory.sh \
+  -t "tests/" \
+  -c "nethermind,geth,reth,erigon,besu" \
+  -r 1 \
+  -o "results/memory" \
+  -s 100

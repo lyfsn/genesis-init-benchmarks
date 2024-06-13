@@ -69,17 +69,8 @@ def process_client_results(client_results):
 def generate_json_report(processed_results, results_path):
     report_path = os.path.join(results_path, 'reports')
     os.makedirs(report_path, exist_ok=True)
-    with open(os.path.join(report_path, 'speed.json'), 'w') as json_file:
+    with open(os.path.join(report_path, 'memory.json'), 'w') as json_file:
         json.dump(processed_results, json_file, indent=4)
-
-def ms_to_readable_time(ms):
-    if ms is None:
-        return "N/A"
-    minutes = ms // 60000
-    seconds = (ms % 60000) // 1000
-    if minutes == 0:
-        return f"{seconds}s"
-    return f"{minutes}min{seconds}s"
 
 def generate_html_report(processed_results, results_path, images, computer_spec):
     html_content = ('<!DOCTYPE html>'
@@ -130,11 +121,11 @@ def generate_html_report(processed_results, results_path, images, computer_spec)
             for part, metrics in sorted_parts:
                 html_content += (f'<tr><td>{size}</td>'
                                  f'<td>{part}</td>'
-                                 f'<td>{ms_to_readable_time(metrics["max"])}</td>'
-                                 f'<td>{ms_to_readable_time(metrics["p50"])}</td>'
-                                 f'<td>{ms_to_readable_time(metrics["p95"])}</td>'
-                                 f'<td>{ms_to_readable_time(metrics["p99"])}</td>'
-                                 f'<td>{ms_to_readable_time(metrics["min"])}</td>'
+                                 f'<td>{metrics["max"]}M</td>'
+                                 f'<td>{metrics["p50"]}M</td>'
+                                 f'<td>{metrics["p95"]}M</td>'
+                                 f'<td>{metrics["p99"]}M</td>'
+                                 f'<td>{metrics["min"]}M</td>'
                                  f'<td>{metrics["count"]}</td></tr>')
         html_content += '</tbody></table>'
     html_content += '</body></html>'
@@ -143,7 +134,7 @@ def generate_html_report(processed_results, results_path, images, computer_spec)
     formatted_html = soup.prettify()
     report_path = os.path.join(results_path, 'reports')
     os.makedirs(report_path, exist_ok=True)
-    with open(os.path.join(report_path, 'speed.html'), 'w') as html_file:
+    with open(os.path.join(report_path, 'memory.html'), 'w') as html_file:
         html_file.write(formatted_html)
 
 def main():
