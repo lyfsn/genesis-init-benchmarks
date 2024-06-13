@@ -17,8 +17,8 @@ on:
         description: 'Output directory for results'
         default: 'results/speed'
       sizes:
-        description: 'Comma-separated list of sizes (e.g., 1,64,512,1024,2048)'
-        default: '1,64,512,1024,2048'
+        description: 'Comma-separated list of sizes (e.g., 1,32,64,256,512)'
+        default: '1,32,64,256,512'
 
 jobs:
   build:
