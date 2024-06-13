@@ -98,24 +98,23 @@ monitor_memory_usage() {
 
   {
     while :; do
-      if [ "$(docker ps -q -f name=$container_name)" ]; then
-        stats_output=$(docker stats --no-stream --format '{"mem_usage":"{{.MemUsage}}"}' $container_name)
+      if docker ps -q -f name="$container_name" &>/dev/null; then
+        stats_output=$(docker stats --no-stream --format "{{.MemUsage}}" "$container_name")
         
-        mem_usage=$(echo $stats_output | jq -r '.mem_usage' | awk '{print $1}')
+        mem_usage=$(echo "$stats_output" | awk '{print $1}')
+        mem_unit=$(echo "$stats_output" | awk '{print $2}')
 
         echo "[DEBUG] Stats output: $stats_output"  # Debug output
         echo "[DEBUG] Memory usage: $mem_usage $mem_unit"  # Debug output
 
         # Convert memory usage to MiB
-        if [[ $mem_unit == "MiB" ]]; then
-          mem_usage_mib=$mem_usage
-        elif [[ $mem_unit == "GiB" ]]; then
-          mem_usage_mib=$(echo "$mem_usage * 1024" | bc)
-        elif [[ $mem_unit == "KiB" ]]; then
-          mem_usage_mib=$(echo "$mem_usage / 1024" | bc)
-        else
-          mem_usage_mib=$(echo "$mem_usage / 1024 / 1024" | bc)
-        fi
+        case $mem_unit in
+          MiB) mem_usage_mib=$mem_usage ;;
+          GiB) mem_usage_mib=$(echo "$mem_usage * 1024" | bc) ;;
+          KiB) mem_usage_mib=$(echo "$mem_usage / 1024" | bc) ;;
+          B)   mem_usage_mib=$(echo "$mem_usage / 1024 / 1024" | bc) ;;
+          *)   mem_usage_mib=0 ;;
+        esac
 
         echo "[DEBUG] Converted memory usage in MiB: $mem_usage_mib"  # Debug output
 
@@ -175,10 +174,18 @@ for size in "${SIZES[@]}"; do
   echo "[INFO] Running benchmarks for size ${size}M"
   echo "======================================"
 
+  echo "[INFO] Calculating new size for $size"
+  new_size=$(echo "scale=2; ($size / 1.2 + 0.5)/1" | bc)
+  if [ $? -ne 0 ]; then
+    echo "[ERROR] Error calculating new size with bc"
+    exit 1
+  fi
+  echo "[INFO] New size calculated: $new_size"
+
   echo "[INFO] Generating chainspec, genesis, and besu files..."
-  python3 generate_chainspec.py $TEST_PATH/chainspec.json $TEST_PATH/tmp/chainspec.json $size
-  python3 generate_genesis.py $TEST_PATH/genesis.json $TEST_PATH/tmp/genesis.json $size
-  python3 generate_besu.py $TEST_PATH/besu.json $TEST_PATH/tmp/besu.json $size
+  python3 generate_chainspec.py $TEST_PATH/chainspec.json $TEST_PATH/tmp/chainspec.json $new_size
+  python3 generate_genesis.py $TEST_PATH/genesis.json $TEST_PATH/tmp/genesis.json $new_size
+  python3 generate_besu.py $TEST_PATH/besu.json $TEST_PATH/tmp/besu.json $new_size
 
   clean_up
 
