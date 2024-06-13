@@ -87,7 +87,7 @@ start_monitoring() {
 
 stop_monitoring() {
   if [ -n "$mem_pid" ]; then
-    kill -9 $mem_pid
+    kill $mem_pid
     echo "[INFO] Stopped memory monitoring with PID $mem_pid"
   fi
 }
@@ -98,8 +98,11 @@ clean_up() {
   docker rm gas-execution-client gas-execution-client-sync
   docker container prune -f
   sudo rm -rf execution-data
+  stop_monitoring # Stop any remaining monitoring processes
   echo "[INFO] Cleanup completed."
 }
+
+trap clean_up EXIT # Ensure cleanup is called on script exit
 
 for size in "${SIZES[@]}"; do
   echo "======================================"
