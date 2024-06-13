@@ -211,4 +211,4 @@ for size in "${SIZES[@]}"; do
   done
 done
 
-python3 report_speed.py --resultsPath $OUTPUT_DIR
+# python3 report_speed.py --resultsPath $OUTPUT_DIR
