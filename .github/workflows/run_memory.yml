@@ -41,7 +41,7 @@ jobs:
 
       - name: Run benchmarks
         run: |
-          chmod +x run.sh
+          chmod +x runMemory.sh
           ./runMemory.sh \
             -t "${{ github.event.inputs.test_path }}" \
             -c "${{ github.event.inputs.clients }}" \
