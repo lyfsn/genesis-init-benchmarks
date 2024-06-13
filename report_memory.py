@@ -121,11 +121,11 @@ def generate_html_report(processed_results, results_path, images, computer_spec)
             for part, metrics in sorted_parts:
                 html_content += (f'<tr><td>{size}</td>'
                                  f'<td>{part}</td>'
-                                 f'<td>{metrics["max"]}M</td>'
-                                 f'<td>{metrics["p50"]}M</td>'
-                                 f'<td>{metrics["p95"]}M</td>'
-                                 f'<td>{metrics["p99"]}M</td>'
-                                 f'<td>{metrics["min"]}M</td>'
+                                 f'<td>{metrics["max"] / 1024:.2f}G</td>'
+                                 f'<td>{metrics["p50"] / 1024:.2f}G</td>'
+                                 f'<td>{metrics["p95"] / 1024:.2f}G</td>'
+                                 f'<td>{metrics["p99"] / 1024:.2f}G</td>'
+                                 f'<td>{metrics["min"] / 1024:.2f}G</td>'
                                  f'<td>{metrics["count"]}</td></tr>')
         html_content += '</tbody></table>'
     html_content += '</body></html>'
