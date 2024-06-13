@@ -101,29 +101,26 @@ monitor_memory_usage() {
       if docker ps -q -f name="$container_name" &>/dev/null; then
         stats_output=$(docker stats --no-stream --format "{{.MemUsage}}" "$container_name")
         
-        mem_usage=$(echo "$stats_output" | awk '{print $1}')
-        mem_unit=$(echo "$stats_output" | awk '{print $2}')
+        mem_usage=$(echo "$stats_output" | awk '{print $1}' | tr -d '[:alpha:]')
+        mem_unit=$(echo "$stats_output" | awk '{print $1}' | tr -d '[:digit:]')
 
         echo "[DEBUG] Stats output: $stats_output"  # Debug output
         echo "[DEBUG] Memory usage: $mem_usage $mem_unit"  # Debug output
 
-        # Convert memory usage to MiB
         case $mem_unit in
           MiB) mem_usage_mib=$mem_usage ;;
-          GiB) mem_usage_mib=$(echo "$mem_usage * 1024" | bc) ;;
-          KiB) mem_usage_mib=$(echo "$mem_usage / 1024" | bc) ;;
-          B)   mem_usage_mib=$(echo "$mem_usage / 1024 / 1024" | bc) ;;
+          GiB) mem_usage_mib=$(echo "$mem_usage * 1024" | bc -l) ;;
+          KiB) mem_usage_mib=$(echo "scale=2; $mem_usage / 1024" | bc -l) ;;
+          B)   mem_usage_mib=$(echo "scale=2; $mem_usage / 1024 / 1024" | bc -l) ;;
           *)   mem_usage_mib=0 ;;
         esac
 
         echo "[DEBUG] Converted memory usage in MiB: $mem_usage_mib"  # Debug output
 
-        # Update maximum memory usage if current usage is greater
         if (( $(echo "$mem_usage_mib > $max_memory" | bc -l) )); then
           max_memory=$mem_usage_mib
         fi
 
-        # Write the metrics to the output file
         echo "$max_memory" > "$output_file"
       fi
       sleep 0.5
