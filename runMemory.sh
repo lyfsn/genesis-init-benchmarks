@@ -99,13 +99,9 @@ monitor_memory_usage() {
   {
     while :; do
       if [ "$(docker ps -q -f name=$container_name)" ]; then
-        stats_output=$(docker stats --no-stream --format '{"mem_usage":"{{.MemUsage}}","mem_perc":"{{.MemPerc}}","net_io":"{{.NetIO}}","block_io":"{{.BlockIO}}"}' $container_name)
+        stats_output=$(docker stats --no-stream --format '{"mem_usage":"{{.MemUsage}}"}' $container_name)
         
         mem_usage=$(echo $stats_output | jq -r '.mem_usage' | awk '{print $1}')
-        mem_unit=$(echo $stats_output | jq -r '.mem_usage' | awk '{print $2}')
-        mem_percentage=$(echo $stats_output | jq -r '.mem_perc')
-        net_io=$(echo $stats_output | jq -r '.net_io')
-        block_io=$(echo $stats_output | jq -r '.block_io')
 
         echo "[DEBUG] Stats output: $stats_output"  # Debug output
         echo "[DEBUG] Memory usage: $mem_usage $mem_unit"  # Debug output
