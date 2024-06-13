@@ -87,7 +87,7 @@ start_monitoring() {
 
 stop_monitoring() {
   if [ -n "$mem_pid" ]; then
-    kill $mem_pid
+    kill -9 $mem_pid
     echo "[INFO] Stopped memory monitoring with PID $mem_pid"
   fi
 }
