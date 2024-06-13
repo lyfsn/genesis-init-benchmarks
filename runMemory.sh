@@ -78,10 +78,10 @@ start_monitoring() {
   local run=$2
   local size=$3
   if [ "$client" = "nethermind" ] || [ "$client" = "besu" ]; then
-    mem_output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M_mem.txt"
+    mem_output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M.txt"
     mem_pid=$(monitor_memory_usage "gas-execution-client" "$mem_output_file")
   else 
-    mem_output_file="${OUTPUT_DIR}/${client}_${run}_first_${size}M_mem.txt"
+    mem_output_file="${OUTPUT_DIR}/${client}_${run}_first_${size}M.txt"
     mem_pid=$(monitor_memory_usage "gas-execution-client-sync" "$mem_output_file")
   fi
   echo "Started memory monitoring with PID $mem_pid"
