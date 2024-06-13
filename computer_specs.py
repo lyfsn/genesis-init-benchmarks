@@ -50,7 +50,7 @@ def main(output_folder):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Computer Specs Script')
-    parser.add_argument('--output_folder', type=str, default='./results', help='The folder to save the output files')
+    parser.add_argument('--output_folder', type=str, default='results', help='The folder to save the output files')
     args = parser.parse_args()
     
     main(args.output_folder)

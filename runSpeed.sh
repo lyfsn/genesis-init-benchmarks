@@ -25,7 +25,7 @@ done
 IFS=',' read -ra CLIENT_ARRAY <<< "$CLIENTS"
 IFS=',' read -ra IMAGE_ARRAY <<< "$IMAGES"
 
-# Append /speed to OUTPUT_DIR
+# Append /speed to OUTPUT_DIR after parsing command line arguments
 OUTPUT_DIR="$OUTPUT_DIR/speed"
 mkdir -p "$OUTPUT_DIR"
 
@@ -33,7 +33,7 @@ mkdir -p "$OUTPUT_DIR"
 pip install -r requirements.txt
 apt install -y jq
 
-python3 computer_specs.py --output_folder $OUTPUT_DIR
+python3 computer_specs.py --output_folder "$OUTPUT_DIR"
 
 # Function to check if initialization is completed
 check_initialization_completed() {
@@ -209,4 +209,4 @@ for size in "${SIZES[@]}"; do
   done
 done
 
-python3 report_speed.py
+python3 report_speed.py --resultsPath $OUTPUT_DIR
