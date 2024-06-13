@@ -19,7 +19,7 @@ nohup \
   -t "tests/" \
   -c "nethermind,geth,reth,erigon,besu" \
   -r 1 \
-  -o "results" \
+  -o "results/speed" \
   -s 1
 
 
@@ -27,5 +27,5 @@ nohup \
   -t "tests/" \
   -c "nethermind,geth,reth,erigon,besu" \
   -r 1 \
-  -o "results" \
+  -o "results/memory" \
   -s 1
