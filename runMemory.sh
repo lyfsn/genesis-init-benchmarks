@@ -103,14 +103,13 @@ monitor_memory_usage() {
   {
     while :; do
       if [ "$(docker ps -q -f name=$container_name)" ]; then
-        # Get the memory usage, cache, rss, and swap memory
-        mem_usage=$(docker stats --no-stream --format "{{.MemUsage}}" $container_name | awk '{print $1}')
-        mem_cache=$(cat /sys/fs/cgroup/memory/docker/$container_name/memory.stat | grep 'cache ' | awk '{print $2}')
-        mem_rss=$(cat /sys/fs/cgroup/memory/docker/$container_name/memory.stat | grep 'rss ' | awk '{print $2}')
-        mem_swap=$(cat /sys/fs/cgroup/memory/docker/$container_name/memory.stat | grep 'swap ' | awk '{print $2}')
-        pgmajfault=$(cat /sys/fs/cgroup/memory/docker/$container_name/memory.stat | grep 'pgmajfault ' | awk '{print $2}')
+        stats_output=$(docker stats --no-stream --format "{{.MemUsage}},{{.MemPerc}},{{.NetIO}},{{.BlockIO}}" $container_name)
+        mem_usage=$(echo $stats_output | cut -d',' -f1 | awk '{print $1}')
+        mem_percentage=$(echo $stats_output | cut -d',' -f2)
+        net_io=$(echo $stats_output | cut -d',' -f3)
+        block_io=$(echo $stats_output | cut -d',' -f4)
 
-        echo "[DEBUG] Raw memory usage: $mem_usage, Cache: $mem_cache, RSS: $mem_rss, Swap: $mem_swap, PgMajFault: $pgmajfault"  # Debug output
+        echo "[DEBUG] Stats output: $stats_output"  # Debug output
 
         # Convert memory usage to MiB
         if [[ $mem_usage == *MiB ]]; then
@@ -122,27 +121,15 @@ monitor_memory_usage() {
           mem_usage=0
         fi
 
-        # Convert other memory metrics from bytes to MiB
-        mem_cache=$(echo "$mem_cache / 1048576" | bc)
-        mem_rss=$(echo "$mem_rss / 1048576" | bc)
-        mem_swap=$(echo "$mem_swap / 1048576" | bc)
-        pgmajfault=$(echo "$pgmajfault" | bc)
-
-        echo "[DEBUG] Converted memory usage in MiB: $mem_usage, Cache: $mem_cache, RSS: $mem_rss, Swap: $mem_swap, PgMajFault: $pgmajfault"  # Debug output
+        echo "[DEBUG] Converted memory usage in MiB: $mem_usage"  # Debug output
 
         # Update maximum memory usage if current usage is greater
         if (( $(echo "$mem_usage > $max_memory" | bc -l) )); then
           max_memory=$mem_usage
         fi
 
-        # Sum up total metrics
-        total_cache=$(echo "$total_cache + $mem_cache" | bc)
-        total_rss=$(echo "$total_rss + $mem_rss" | bc)
-        total_swap=$(echo "$total_swap + $mem_swap" | bc)
-        total_pgmajfault=$(echo "$total_pgmajfault + $pgmajfault" | bc)
-
         # Write the metrics to the output file
-        echo "Max Memory: $max_memory MiB, Total Cache: $total_cache MiB, Total RSS: $total_rss MiB, Total Swap: $total_swap MiB, Total PgMajFault: $total_pgmajfault" > "$output_file"
+        echo "Max Memory: $max_memory MiB, Memory Usage: $mem_usage MiB, Memory Percentage: $mem_percentage, Network I/O: $net_io, Block I/O: $block_io" > "$output_file"
       fi
       sleep 0.1
     done
