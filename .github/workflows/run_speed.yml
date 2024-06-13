@@ -1,4 +1,4 @@
-name: Run benchmarks
+name: Run Speed Benchmarks
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ on:
         description: 'Output directory for results'
         default: 'results'
       sizes:
-        description: 'Comma-separated list of sizes (e.g., 1,100,1000)'
+        description: 'Comma-separated list of sizes (e.g., 1,64,512,1024,2048)'
         default: '1,64,512,1024,2048'
 
 jobs:
@@ -42,7 +42,7 @@ jobs:
       - name: Run benchmarks
         run: |
           chmod +x run.sh
-          ./run.sh \
+          ./runSpeed.sh \
             -t "${{ github.event.inputs.test_path }}" \
             -c "${{ github.event.inputs.clients }}" \
             -r "${{ github.event.inputs.runs }}" \
