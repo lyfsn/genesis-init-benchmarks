@@ -100,28 +100,17 @@ monitor_memory_usage() {
     while :; do
       if [ "$(docker ps -q -f name=$container_name)" ]; then
         container_id=$(docker inspect --format="{{.Id}}" $container_name)
+        cgroup_path=$(grep -l "$container_id" /sys/fs/cgroup/*/*/cgroup.procs | sed 's|/cgroup.procs||')
         
-        # Determine cgroup version and path
-        if [ -d "/sys/fs/cgroup/memory/docker/$container_id" ]; then
-          # cgroup v1
-          memory_stats_path="/sys/fs/cgroup/memory/docker/$container_id/memory.stat"
-          memory_usage_path="/sys/fs/cgroup/memory/docker/$container_id/memory.usage_in_bytes"
-        elif [ -d "/sys/fs/cgroup/docker/$container_id" ]; then
-          # cgroup v2
-          memory_stats_path="/sys/fs/cgroup/docker/$container_id/memory.stat"
-          memory_usage_path="/sys/fs/cgroup/docker/$container_id/memory.current"
-        else
-          echo "[DEBUG] Cgroup path not found for container $container_name"  # Debug output
-          sleep 0.1
-          continue
-        fi
-
-        if [ -f "$memory_stats_path" ] && [ -f "$memory_usage_path" ]; then
-          total_cache=$(grep 'total_cache ' $memory_stats_path | awk '{print $2}')
-          total_rss=$(grep 'total_rss ' $memory_stats_path | awk '{print $2}')
-          total_swap=$(grep 'total_swap ' $memory_stats_path | awk '{print $2}')
-          total_pgmajfault=$(grep 'pgmajfault ' $memory_stats_path | awk '{print $2}')
-          mem_usage=$(cat $memory_usage_path)
+        memory_stat_file="$cgroup_path/memory.stat"
+        memory_usage_file="$cgroup_path/memory.current"
+        
+        if [ -f "$memory_stat_file" ] && [ -f "$memory_usage_file" ]; then
+          total_cache=$(grep 'total_cache ' $memory_stat_file | awk '{print $2}')
+          total_rss=$(grep 'total_rss ' $memory_stat_file | awk '{print $2}')
+          total_swap=$(grep 'total_swap ' $memory_stat_file | awk '{print $2}')
+          total_pgmajfault=$(grep 'pgmajfault ' $memory_stat_file | awk '{print $2}')
+          mem_usage=$(cat $memory_usage_file)
           
           # Convert from bytes to MiB
           total_cache=$(echo "$total_cache / 1024 / 1024" | bc)
@@ -137,7 +126,7 @@ monitor_memory_usage() {
           # Write the metrics to the output file
           echo "Max Memory: $max_memory MiB, Total Cache: $total_cache MiB, Total RSS: $total_rss MiB, Total Swap: $total_swap MiB, Total PgMajFault: $total_pgmajfault" > "$output_file"
         else
-          echo "[DEBUG] Memory stats file or usage file not found for container $container_name"  # Debug output
+          echo "[DEBUG] Memory stat file or usage file not found for container $container_name"  # Debug output
         fi
       fi
       sleep 0.1
