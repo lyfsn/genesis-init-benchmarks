@@ -69,7 +69,7 @@ def process_client_results(client_results):
 def generate_json_report(processed_results, results_path):
     report_path = os.path.join(results_path, 'reports')
     os.makedirs(report_path, exist_ok=True)
-    with open(os.path.join(report_path, 'results.json'), 'w') as json_file:
+    with open(os.path.join(report_path, 'speed.json'), 'w') as json_file:
         json.dump(processed_results, json_file, indent=4)
 
 def ms_to_readable_time(ms):
@@ -143,7 +143,7 @@ def generate_html_report(processed_results, results_path, images, computer_spec)
     formatted_html = soup.prettify()
     report_path = os.path.join(results_path, 'reports')
     os.makedirs(report_path, exist_ok=True)
-    with open(os.path.join(report_path, 'report.html'), 'w') as html_file:
+    with open(os.path.join(report_path, 'speed.html'), 'w') as html_file:
         html_file.write(formatted_html)
 
 def main():

@@ -1,0 +1,60 @@
+name: Run Memory Benchmarks
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_path:
+        description: 'Path to test file'
+        default: 'tests/'
+      clients:
+        description: 'Comma-separated list of client names (e.g., nethermind,geth,reth,besu,erigon)'
+        default: 'nethermind,reth,besu,erigon,geth'
+        required: true
+      runs:
+        description: 'Number of runs for the application'
+        default: 8
+      output_dir:
+        description: 'Output directory for results'
+        default: 'results'
+      sizes:
+        description: 'Comma-separated list of sizes (e.g., 1,64,512,1024,2048)'
+        default: '1,64,512,1024,2048'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Run benchmarks
+        run: |
+          chmod +x run.sh
+          ./runMemory.sh \
+            -t "${{ github.event.inputs.test_path }}" \
+            -c "${{ github.event.inputs.clients }}" \
+            -r "${{ github.event.inputs.runs }}" \
+            -o "${{ github.event.inputs.output_dir }}" \
+            -s "${{ github.event.inputs.sizes }}"
+
+      - name: Zip the reports
+        run: |
+          zip -r reports.zip results/reports
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: reports
+          path: reports.zip
