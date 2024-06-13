@@ -51,7 +51,8 @@ jobs:
 
       - name: Zip the reports
         run: |
-          zip -r reports.zip results/reports
+          cd results/memory/reports
+          zip -r ../../../reports.zip .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
