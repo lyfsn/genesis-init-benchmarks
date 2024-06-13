@@ -140,7 +140,7 @@ for size in "${SIZES[@]}"; do
       clean_up
       cd ../..
 
-      start_monitoring $client $run $size "first"
+      start_monitoring $client $run $size "first" &
 
       if [ -z "$image" ]; then
         echo "[INFO] Image input is empty, using default image."
@@ -156,7 +156,7 @@ for size in "${SIZES[@]}"; do
       docker compose stop
       cd ../..
 
-      start_monitoring $client $run $size "second"
+      start_monitoring $client $run $size "second" &
 
       if [ -z "$image" ]; then
         echo "[INFO] Image input is empty, using default image."
