@@ -133,7 +133,7 @@ for size in "${SIZES[@]}"; do
       esac
 
       cd "scripts/$client"
-      docker compose down
+      docker compose down --remove-orphans
       docker stop gas-execution-client
       docker stop gas-execution-client-sync
       docker rm gas-execution-client
@@ -198,7 +198,7 @@ for size in "${SIZES[@]}"; do
       echo "=== Interval $interval written to $output_file ==="
 
       cd "scripts/$client"
-      docker compose down
+      docker compose down --remove-orphans
       docker stop gas-execution-client
       docker stop gas-execution-client-sync
       docker rm gas-execution-client
