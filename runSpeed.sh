@@ -134,6 +134,7 @@ for size in "${SIZES[@]}"; do
 
       cd "scripts/$client"
       docker compose down --remove-orphans
+      docker container prune -f
       docker stop gas-execution-client
       docker stop gas-execution-client-sync
       docker rm gas-execution-client
@@ -169,6 +170,8 @@ for size in "${SIZES[@]}"; do
 
       cd "scripts/$client"
       docker compose stop
+      docker stop gas-execution-client
+      docker stop gas-execution-client-sync
       cd ../..
 
       # Record the second start time
@@ -199,6 +202,7 @@ for size in "${SIZES[@]}"; do
 
       cd "scripts/$client"
       docker compose down --remove-orphans
+      docker container prune -f
       docker stop gas-execution-client
       docker stop gas-execution-client-sync
       docker rm gas-execution-client
