@@ -15,13 +15,13 @@ def calculate_metrics(values):
             'min': None,
             'count': 0
         }
-    values = np.array(values, dtype=int)
+    values = np.array(values, dtype=float)  # Change to float
     return {
-        'max': int(np.max(values)),
-        'p50': int(np.percentile(values, 50)),
-        'p95': int(np.percentile(values, 95)),
-        'p99': int(np.percentile(values, 99)),
-        'min': int(np.min(values)),
+        'max': np.max(values),
+        'p50': np.percentile(values, 50),
+        'p95': np.percentile(values, 95),
+        'p99': np.percentile(values, 99),
+        'min': np.min(values),
         'count': len(values)
     }
 
@@ -36,7 +36,9 @@ def get_client_results(results_path):
                 try:
                     run = int(run)
                     with open(os.path.join(results_path, filename), 'r') as file:
-                        value = int(file.read().strip())
+                        content = file.read().strip()
+                        print(f"Reading file {filename} content: {content}")  # Debug line
+                        value = float(content)  # Change to float
                 except ValueError:
                     print(f"Skipping file {filename} due to invalid content")
                     continue

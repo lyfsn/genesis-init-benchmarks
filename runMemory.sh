@@ -189,6 +189,14 @@ for size in "${SIZES[@]}"; do
       client="${CLIENT_ARRAY[$I]}"
       image="${IMAGE_ARRAY[$I]}"
 
+      case $client in
+        nethermind) log_entry="initialization completed" ;;
+        reth) log_entry="Starting reth" ;;
+        erigon) log_entry="logging to file system" ;;
+        geth) log_entry="Set global gas cap" ;;
+        besu) log_entry="Writing node record to disk" ;;
+      esac
+
       cd "scripts/$client"
       clean_up
       docker compose down --remove-orphans
