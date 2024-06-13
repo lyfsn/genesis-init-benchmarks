@@ -176,18 +176,11 @@ for size in "${SIZES[@]}"; do
   echo "======================================"
 
   echo "[INFO] Calculating new size for $size"
-  
-  if ! [[ "$size" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
-    echo "[ERROR] Size $size is not a valid number"
+  new_size=$(echo "scale=2; ($size / 1.2 + 0.5)/1" | bc)
+  if [ $? -ne 0 ]; then
+    echo "[ERROR] Error calculating new size with bc"
     exit 1
   fi
-
-  new_size=$(echo "scale=2; ($size / 1.2 + 0.5)/1" | bc 2>&1)
-  if [[ $new_size == *"syntax error"* ]]; then
-    echo "[ERROR] Syntax error in bc expression: scale=2; ($size / 1.2 + 0.5)/1"
-    exit 1
-  fi
-  
   echo "[INFO] New size calculated: $new_size"
 
   echo "[INFO] Generating chainspec, genesis, and besu files..."
