@@ -29,3 +29,11 @@ nohup \
   -r 1 \
   -o "results/speed" \
   -s 1
+
+
+./runMemory.sh \
+  -t "tests/" \
+  -c "nethermind" \
+  -r 1 \
+  -o "results/memory" \
+  -s 1

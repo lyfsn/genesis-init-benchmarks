@@ -5,7 +5,7 @@ TEST_PATH="tests/"
 CLIENTS="nethermind,geth,reth"
 RUNS=8
 IMAGES="default"
-OUTPUT_DIR="results"
+OUTPUT_DIR="results/memory"
 SIZES=("1" "64" "512")
 
 # Parse command line arguments
@@ -25,7 +25,6 @@ done
 IFS=',' read -ra CLIENT_ARRAY <<< "$CLIENTS"
 IFS=',' read -ra IMAGE_ARRAY <<< "$IMAGES"
 
-OUTPUT_DIR="$OUTPUT_DIR/memory"
 mkdir -p "$OUTPUT_DIR"
 mkdir -p "$TEST_PATH/tmp"
 
