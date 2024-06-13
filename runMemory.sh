@@ -136,8 +136,8 @@ for size in "${SIZES[@]}"; do
       image="${IMAGE_ARRAY[$I]}"
 
       cd "scripts/$client"
-      docker compose down --remove-orphans
       clean_up
+      docker compose down --remove-orphans
       cd ../..
 
       start_monitoring $client $run $size "first" &
@@ -169,8 +169,8 @@ for size in "${SIZES[@]}"; do
       stop_monitoring
 
       cd "scripts/$client"
-      docker compose down --remove-orphans
       clean_up
+      docker compose down --remove-orphans
       cd ../..
     done
   done
