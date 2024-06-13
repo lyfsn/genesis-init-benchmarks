@@ -129,7 +129,7 @@ monitor_memory_usage() {
         fi
 
         # Write the metrics to the output file
-        echo "Max Memory: $max_memory MiB, Memory Usage: $mem_usage_mib MiB, Memory Percentage: $mem_percentage, Network I/O: $net_io, Block I/O: $block_io" > "$output_file"
+        echo "$max_memory" > "$output_file"
       fi
       sleep 0.1
     done
