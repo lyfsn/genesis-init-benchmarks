@@ -73,13 +73,15 @@ start_monitoring() {
   local client=$1
   local run=$2
   local size=$3
+  local suffix=$4
+  local container_name
   if [ "$client" = "nethermind" ] || [ "$client" = "besu" ]; then
-    mem_output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M.txt"
-    mem_pid=$(monitor_memory_usage "gas-execution-client" "$mem_output_file")
-  else 
-    mem_output_file="${OUTPUT_DIR}/${client}_${run}_first_${size}M.txt"
-    mem_pid=$(monitor_memory_usage "gas-execution-client-sync" "$mem_output_file")
+    container_name="gas-execution-client"
+  else
+    container_name="gas-execution-client-sync"
   fi
+  mem_output_file="${OUTPUT_DIR}/${client}_${run}_${suffix}_${size}M.txt"
+  mem_pid=$(monitor_memory_usage "$container_name" "$mem_output_file")
   echo "[INFO] Started memory monitoring with PID $mem_pid"
 }
 
@@ -133,7 +135,7 @@ for size in "${SIZES[@]}"; do
       clean_up
       cd ../..
 
-      start_monitoring $client $run $size &
+      start_monitoring $client $run $size "first"
 
       if [ -z "$image" ]; then
         echo "[INFO] Image input is empty, using default image."
@@ -149,7 +151,7 @@ for size in "${SIZES[@]}"; do
       docker compose stop
       cd ../..
 
-      start_monitoring $client $run $size &
+      start_monitoring $client $run $size "second"
 
       if [ -z "$image" ]; then
         echo "[INFO] Image input is empty, using default image."
