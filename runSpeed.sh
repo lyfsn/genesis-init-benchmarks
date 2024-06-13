@@ -196,4 +196,3 @@ done
 python3 report_speed.py --resultsPath $OUTPUT_DIR
 echo "[INFO] Benchmarking completed and report generated."
 
-pkill runSpeed.sh
