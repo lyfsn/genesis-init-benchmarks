@@ -25,6 +25,7 @@ done
 IFS=',' read -ra CLIENT_ARRAY <<< "$CLIENTS"
 IFS=',' read -ra IMAGE_ARRAY <<< "$IMAGES"
 
+# Append /speed to OUTPUT_DIR
 OUTPUT_DIR="$OUTPUT_DIR/speed"
 mkdir -p "$OUTPUT_DIR"
 
