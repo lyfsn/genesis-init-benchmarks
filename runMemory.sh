@@ -266,3 +266,5 @@ done
 
 python3 report_memory.py --resultsPath $OUTPUT_DIR
 echo "[INFO] Benchmarking completed and report generated."
+
+pkill runMemory.sh
