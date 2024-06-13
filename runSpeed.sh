@@ -5,7 +5,7 @@ TEST_PATH="tests/"
 CLIENTS="nethermind,geth,reth"
 RUNS=8
 IMAGES="default"
-OUTPUT_DIR="results"
+OUTPUT_DIR="results/speed"
 SIZES=("1" "100" "1000")
 
 # Parse command line arguments
@@ -25,8 +25,6 @@ done
 IFS=',' read -ra CLIENT_ARRAY <<< "$CLIENTS"
 IFS=',' read -ra IMAGE_ARRAY <<< "$IMAGES"
 
-# Append /speed to OUTPUT_DIR after parsing command line arguments
-OUTPUT_DIR="$OUTPUT_DIR/speed"
 mkdir -p "$OUTPUT_DIR"
 
 # Install dependencies
