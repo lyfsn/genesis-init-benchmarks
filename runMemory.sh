@@ -100,9 +100,22 @@ monitor_memory_usage() {
     while :; do
       if [ "$(docker ps -q -f name=$container_name)" ]; then
         container_id=$(docker inspect --format="{{.Id}}" $container_name)
-        memory_stats_path="/sys/fs/cgroup/memory/docker/$container_id/memory.stat"
-        memory_usage_path="/sys/fs/cgroup/memory/docker/$container_id/memory.usage_in_bytes"
         
+        # Determine cgroup version and path
+        if [ -d "/sys/fs/cgroup/memory/docker/$container_id" ]; then
+          # cgroup v1
+          memory_stats_path="/sys/fs/cgroup/memory/docker/$container_id/memory.stat"
+          memory_usage_path="/sys/fs/cgroup/memory/docker/$container_id/memory.usage_in_bytes"
+        elif [ -d "/sys/fs/cgroup/docker/$container_id" ]; then
+          # cgroup v2
+          memory_stats_path="/sys/fs/cgroup/docker/$container_id/memory.stat"
+          memory_usage_path="/sys/fs/cgroup/docker/$container_id/memory.current"
+        else
+          echo "[DEBUG] Cgroup path not found for container $container_name"  # Debug output
+          sleep 0.1
+          continue
+        fi
+
         if [ -f "$memory_stats_path" ] && [ -f "$memory_usage_path" ]; then
           total_cache=$(grep 'total_cache ' $memory_stats_path | awk '{print $2}')
           total_rss=$(grep 'total_rss ' $memory_stats_path | awk '{print $2}')
