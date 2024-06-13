@@ -126,7 +126,7 @@ monitor_memory_usage() {
         # Write the metrics to the output file
         echo "$max_memory" > "$output_file"
       fi
-      sleep 0.1
+      sleep 0.5
     done
   } &
   echo $!
@@ -157,10 +157,25 @@ stop_monitoring() {
   fi
 }
 
+container_exists() {
+  local container_name=$1
+  if [ "$(docker ps -a -q -f name=$container_name)" ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
 clean_up() {
   echo "[INFO] Cleaning up containers and data..."
-  docker stop gas-execution-client gas-execution-client-sync
-  docker rm gas-execution-client gas-execution-client-sync
+  if container_exists "gas-execution-client"; then
+    docker stop gas-execution-client
+    docker rm gas-execution-client
+  fi
+  if container_exists "gas-execution-client-sync"; then
+    docker stop gas-execution-client-sync
+    docker rm gas-execution-client-sync
+  fi
   docker container prune -f
   sudo rm -rf execution-data
   stop_monitoring # Stop any remaining monitoring processes
