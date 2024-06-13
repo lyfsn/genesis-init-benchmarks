@@ -23,9 +23,9 @@ nohup \
   -s 1
 
 
-./runMemory.sh \
+./runSpeed.sh \
   -t "tests/" \
-  -c "nethermind,geth,reth,erigon,besu" \
+  -c "nethermind" \
   -r 1 \
-  -o "results/memory" \
+  -o "results/speed" \
   -s 1
