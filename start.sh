@@ -31,6 +31,20 @@ nohup \
   -s 1,32,64,256,512,1024,2048 \
   > output.log 2>&1 &
 
+
+
+
+
+./runSpeed.sh \
+  -t "tests/" \
+  -c "nethermind,geth,reth,erigon,besu" \
+  -r 1 \
+  -o "results" \
+  -s 1,2,3,4,5,6
+
+
+
+
 nohup \
   ./run.sh \
   -t "tests/" \

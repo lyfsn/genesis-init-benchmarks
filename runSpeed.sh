@@ -208,4 +208,4 @@ for size in "${SIZES[@]}"; do
   done
 done
 
-python3 report.py
+python3 report_speed.py
