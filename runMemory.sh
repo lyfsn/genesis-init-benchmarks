@@ -35,6 +35,60 @@ apt install -y jq
 python3 computer_specs.py --output_folder $OUTPUT_DIR
 echo "[INFO] Dependencies installed."
 
+
+check_initialization_completed() {
+  local client=$1
+  local log_entry=$2
+  local container_name="gas-execution-client"
+  local max_retries=7200
+  local retry_count=0
+  local wait_time=0.5 
+  local max_wait_time=120 
+  local container_check_retries=12
+  local container_retry_count=0
+
+  check_container_running() {
+    while [ $container_retry_count -lt $container_check_retries ]; do
+      if [ -z "$(docker ps -q -f name=$container_name)" ]; then
+        echo "[ERROR] Container $container_name has stopped unexpectedly. Retrying... ($((container_retry_count + 1))/$container_check_retries)"
+        container_retry_count=$((container_retry_count + 1))
+        sleep $max_wait_time
+      else
+        return 0
+      fi
+    done
+    echo "[ERROR] Container $container_name has stopped unexpectedly after $container_check_retries retries."
+    return 1
+  }
+
+  check_container_running
+  if [ $? -ne 0 ]; then
+    return 1
+  fi
+
+  echo "[INFO] Container $container_name has started."
+
+  retry_count=0
+  echo "[INFO] Waiting for log entry: '$log_entry' in $container_name..."
+  until docker logs $container_name 2>&1 | grep -q "$log_entry"; do
+    sleep $wait_time
+    retry_count=$((retry_count+1))
+
+    check_container_running
+    if [ $? -ne 0 ]; then
+      return 1
+    fi
+
+    if [ $retry_count -ge $max_retries ]; then
+      echo "[ERROR] Log entry '$log_entry' not found in $container_name within the expected time."
+      return 1
+    fi
+  done
+
+  echo "[INFO] Log entry '$log_entry' found in $container_name."
+  return 0
+}
+
 monitor_memory_usage() {
   local container_name=$1
   local output_file=$2
@@ -150,6 +204,12 @@ for size in "${SIZES[@]}"; do
         python3 setup_node.py --client $client --image $image
       fi
 
+      check_initialization_completed $client "$log_entry"
+      if [ $? -ne 0 ]; then
+        echo "[ERROR] Initialization check failed for client $client"
+        stop_monitoring
+        continue
+      fi
       stop_monitoring
 
       cd "scripts/$client"
@@ -166,6 +226,12 @@ for size in "${SIZES[@]}"; do
         python3 setup_node.py --client $client --image $image --second-start
       fi
 
+      check_initialization_completed $client "$log_entry"
+      if [ $? -ne 0 ]; then
+        echo "[ERROR] Initialization check failed for client $client"
+        stop_monitoring
+        continue
+      fi
       stop_monitoring
 
       cd "scripts/$client"
