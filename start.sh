@@ -26,9 +26,9 @@ nohup \
   ./run.sh \
   -t "tests/" \
   -c "nethermind,geth,reth,erigon,besu" \
-  -r 1 \
+  -r 8 \
   -o "results" \
-  -s 1,64,512,1024 \
+  -s 1,32,64,256,512,1024,2048 \
   > output.log 2>&1 &
 
 nohup \

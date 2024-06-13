@@ -190,7 +190,11 @@ for size in "${SIZES[@]}"; do
       esac
 
       cd "scripts/$client"
-      docker compose down -t 0
+      docker compose down
+      docker stop gas-execution-client
+      docker stop gas-execution-client-sync
+      docker rm gas-execution-client
+      docker rm gas-execution-client-sync
       sudo rm -rf execution-data
       cd ../..
 
@@ -227,7 +231,7 @@ for size in "${SIZES[@]}"; do
       stop_monitoring
 
       cd "scripts/$client"
-      docker compose stop -t 0
+      docker compose stop
       cd ../..
 
       # Record the second start time
@@ -262,7 +266,11 @@ for size in "${SIZES[@]}"; do
       stop_monitoring
 
       cd "scripts/$client"
-      docker compose down -t 0
+      docker compose down
+      docker stop gas-execution-client
+      docker stop gas-execution-client-sync
+      docker rm gas-execution-client
+      docker rm gas-execution-client-sync
       sudo rm -rf execution-data
       cd ../..
     done
