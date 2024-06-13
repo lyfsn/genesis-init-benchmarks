@@ -25,7 +25,7 @@ done
 IFS=',' read -ra CLIENT_ARRAY <<< "$CLIENTS"
 IFS=',' read -ra IMAGE_ARRAY <<< "$IMAGES"
 
-# Set up environment
+OUTPUT_DIR = "$OUTPUT_DIR/speed"
 mkdir -p "$OUTPUT_DIR"
 
 # Install dependencies
