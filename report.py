@@ -166,7 +166,7 @@ def generate_html_report(processed_results, results_path, images, computer_spec)
 
 def main():
     parser = argparse.ArgumentParser(description='Benchmark script')
-    parser.add_argument('--resultsPath', type=str, help='Path to gather the results', default='results')
+    parser.add_argument('--resultsPath', type=str, help='Path to gather the results', default='results/speed')
     parser.add_argument('--images', type=str, help='Image values per each client',
                         default='{ "nethermind": "default", "besu": "default", "geth": "default", "reth": "default", "erigon": "default" }')
 
