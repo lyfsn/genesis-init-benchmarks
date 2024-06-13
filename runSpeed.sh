@@ -175,10 +175,10 @@ for size in "${SIZES[@]}"; do
 
       if [ -z "$image" ]; then
         echo "Image input is empty, using default image."
-        python3 setup_node.py --client $client
+        python3 setup_node.py --client $client --second-start
       else
         echo "Using provided image: $image for $client"
-        python3 setup_node.py --client $client --image $image
+        python3 setup_node.py --client $client --image $image --second-start
       fi
 
       # Check initialization completion

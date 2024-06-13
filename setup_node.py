@@ -1,4 +1,3 @@
-# Create argument parser
 import argparse
 import datetime
 import json
@@ -7,9 +6,12 @@ import subprocess
 import yaml
 
 
-def run_command(client, run_path):
+def run_command(client, run_path, second_start):
     # Add logic here to run the appropriate command for each client
-    command = f'{run_path}/run.sh'
+    if second_start:
+        command = f'{run_path}/run_second.sh'
+    else:
+        command = f'{run_path}/run.sh'
     print(f"{client} running at url 'http://localhost:8551'(auth), with command: '{command}'")
     subprocess.run(command, shell=True, text=True)
 
@@ -40,12 +42,14 @@ def main():
     parser.add_argument('--image', type=str, help='Docker image of the client we are going to use.')
     parser.add_argument('--imageBulk', type=str, help='Docker image of the client we are going to use.',
                         default='{"nethermind": "default", "besu": "default", "geth": "default", "reth": "default", "erigon": "default"}')
+    parser.add_argument('--second-start', action='store_true', help='Flag to indicate if this is the second start of the script.')
 
     # Parse command-line arguments
     args = parser.parse_args()
 
     # Get client name and test case folder from command-line arguments
     client = args.client
+    second_start = args.second_start
 
     client_without_tag = client.split("_")[0]
 
@@ -76,7 +80,7 @@ def main():
     set_image(client_without_tag, el_images, run_path)
 
     # Start the client
-    run_command(client, run_path)
+    run_command(client, run_path, second_start)
 
 
 if __name__ == '__main__':
