@@ -95,10 +95,6 @@ clean_up() {
 }
 
 for size in "${SIZES[@]}"; do
-  echo "======================================"
-  echo "[INFO] Running benchmarks for size ${size}M"
-  echo "======================================"
-
   echo "[INFO] Calculating new size for $size"
   new_size=$(echo "scale=2; ($size / 1.2 + 0.5)/1" | bc)
   if [ $? -ne 0 ]; then
@@ -116,7 +112,7 @@ for size in "${SIZES[@]}"; do
   for run in $(seq 1 $RUNS); do
     for I in "${!CLIENT_ARRAY[@]}"; do
       echo "--------------------------------------"
-      echo "[INFO] Run round $run - Client ${CLIENT_ARRAY[$I]} - Image ${IMAGE_ARRAY[$I]}"
+      echo "[INFO] Run size ${size}M round $run - Client ${CLIENT_ARRAY[$I]} - Image ${IMAGE_ARRAY[$I]}"
       echo "--------------------------------------"
 
       client="${CLIENT_ARRAY[$I]}"
