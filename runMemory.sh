@@ -172,10 +172,10 @@ for size in "${SIZES[@]}"; do
       cd ../..
 
       if [[ "$client" == "nethermind" || "$client" == "besu" ]]; then
-        memory_output_file="${OUTPUT_DIR}/${client}_${run}_first_${size}M_mem.txt"
+        memory_output_file="${OUTPUT_DIR}/${client}_${run}_first_${size}M.txt"
         monitor_memory_usage "gas-execution-client" $memory_output_file
       else
-        memory_output_file="${OUTPUT_DIR}/${client}_${run}_first_${size}M_mem.txt"
+        memory_output_file="${OUTPUT_DIR}/${client}_${run}_first_${size}M.txt"
         monitor_memory_usage "gas-execution-client-sync" $memory_output_file
       fi
 
@@ -202,10 +202,10 @@ for size in "${SIZES[@]}"; do
       cd ../..
 
       if [[ "$client" == "nethermind" || "$client" == "besu" ]]; then
-        memory_output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M_mem.txt"
+        memory_output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M.txt"
         monitor_memory_usage "gas-execution-client" $memory_output_file
       else
-        memory_output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M_mem.txt"
+        memory_output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M.txt"
         monitor_memory_usage "gas-execution-client-sync" $memory_output_file
       fi
 
