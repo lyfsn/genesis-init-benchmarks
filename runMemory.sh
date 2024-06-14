@@ -129,6 +129,7 @@ monitor_memory_usage() {
 }
 
 start_monitoring() {
+  echo "[INFO] Starting memory monitoring..."
   local client=$1
   local run=$2
   local size=$3
