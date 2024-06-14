@@ -99,29 +99,36 @@ monitor_memory_usage() {
   {
     while :; do
       if docker ps -q -f name="$container_name" &>/dev/null; then
-        stats_output=$(docker stats --no-stream --format "{{.MemUsage}}" "$container_name")
-        
-        mem_usage=$(echo "$stats_output" | awk '{print $1}' | tr -d '[:alpha:]')
-        mem_unit=$(echo "$stats_output" | awk '{print $1}' | tr -d '[:digit:]')
+        echo "[INFO] Container $container_name is running. Starting memory monitoring."  # Info output
 
-        echo "[DEBUG] Stats output: $stats_output"  # Debug output
-        echo "[DEBUG] Memory usage: $mem_usage $mem_unit"  # Debug output
+        while :; do
+          stats_output=$(docker stats --no-stream --format "{{.MemUsage}}" "$container_name")
+          
+          mem_usage=$(echo "$stats_output" | awk '{print $1}' | tr -d '[:alpha:]')
+          mem_unit=$(echo "$stats_output" | awk '{print $1}' | tr -d '[:digit:]')
 
-        case $mem_unit in
-          MiB) mem_usage_mib=$mem_usage ;;
-          GiB) mem_usage_mib=$(echo "$mem_usage * 1024" | bc -l) ;;
-          KiB) mem_usage_mib=$(echo "scale=2; $mem_usage / 1024" | bc -l) ;;
-          B)   mem_usage_mib=$(echo "scale=2; $mem_usage / 1024 / 1024" | bc -l) ;;
-          *)   mem_usage_mib=0 ;;
-        esac
+          echo "[DEBUG] Stats output: $stats_output"  # Debug output
+          echo "[DEBUG] Memory usage: $mem_usage $mem_unit"  # Debug output
 
-        echo "[DEBUG] Converted memory usage in MiB: $mem_usage_mib"  # Debug output
+          case $mem_unit in
+            MiB) mem_usage_mib=$mem_usage ;;
+            GiB) mem_usage_mib=$(echo "$mem_usage * 1024" | bc -l) ;;
+            KiB) mem_usage_mib=$(echo "scale=2; $mem_usage / 1024" | bc -l) ;;
+            B)   mem_usage_mib=$(echo "scale=2; $mem_usage / 1024 / 1024" | bc -l) ;;
+            *)   mem_usage_mib=0 ;;
+          esac
 
-        if (( $(echo "$mem_usage_mib > $max_memory" | bc -l) )); then
-          max_memory=$mem_usage_mib
-        fi
+          echo "[DEBUG] Converted memory usage in MiB: $mem_usage_mib"  # Debug output
 
-        echo "$max_memory" > "$output_file"
+          if (( $(echo "$mem_usage_mib > $max_memory" | bc -l) )); then
+            max_memory=$mem_usage_mib
+          fi
+
+          echo "$max_memory" > "$output_file"
+          sleep 0.5
+        done
+      else
+        echo "[INFO] Waiting for container $container_name to start..."  # Info output
       fi
       sleep 0.5
     done
