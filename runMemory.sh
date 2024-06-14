@@ -93,43 +93,73 @@ monitor_memory_usage() {
   local output_file=$2
   local unique_id=$3 
   local max_memory=0
+  local max_retries=7200
+  local retry_count=0
+  local wait_time=0.5
+  local max_wait_time=120
+  local container_check_retries=12
+  local container_retry_count=0
 
   echo "-1" > "$output_file"
 
-  {
-    while :; do
-      if docker ps -q -f name="$container_name" &>/dev/null; then
-        echo "[INFO] Container $container_name is running. Starting memory monitoring."  # Info output
-
-        while :; do
-          stats_output=$(docker stats --no-stream --format "{{.MemUsage}}" "$container_name")
-          
-          mem_usage=$(echo "$stats_output" | awk '{print $1}' | tr -d '[:alpha:]')
-          mem_unit=$(echo "$stats_output" | awk '{print $1}' | tr -d '[:digit:]')
-
-          echo "[DEBUG] Stats output: $stats_output"  # Debug output
-          echo "[DEBUG] Memory usage: $mem_usage $mem_unit"  # Debug output
-
-          case $mem_unit in
-            MiB) mem_usage_mib=$mem_usage ;;
-            GiB) mem_usage_mib=$(echo "$mem_usage * 1024" | bc -l) ;;
-            KiB) mem_usage_mib=$(echo "scale=2; $mem_usage / 1024" | bc -l) ;;
-            B)   mem_usage_mib=$(echo "scale=2; $mem_usage / 1024 / 1024" | bc -l) ;;
-            *)   mem_usage_mib=0 ;;
-          esac
-
-          echo "[DEBUG] Converted memory usage in MiB: $mem_usage_mib"  # Debug output
-
-          if (( $(echo "$mem_usage_mib > $max_memory" | bc -l) )); then
-            max_memory=$mem_usage_mib
-          fi
-
-          echo "$max_memory" > "$output_file"
-          sleep 0.5
-        done
+  check_container_running() {
+    while [ $container_retry_count -lt $container_check_retries ]; do
+      if [ -z "$(docker ps -q -f name=$container_name)" ]; then
+        echo "[ERROR] Container $container_name has stopped unexpectedly. Retrying... ($((container_retry_count + 1))/$container_check_retries)"
+        container_retry_count=$((container_retry_count + 1))
+        sleep $max_wait_time
       else
-        echo "[INFO] Waiting for container $container_name to start..."  # Info output
+        return 0
       fi
+    done
+    echo "[ERROR] Container $container_name has stopped unexpectedly after $container_check_retries retries."
+    return 1
+  }
+
+  {
+    echo "[INFO] Waiting for container $container_name to start..."
+    while [ $retry_count -lt $max_retries ]; do
+      if docker ps -q -f name="$container_name" &>/dev/null; then
+        echo "[INFO] Container $container_name is running. Starting memory monitoring."
+        break
+      fi
+      retry_count=$((retry_count + 1))
+      sleep $wait_time
+    done
+
+    if [ $retry_count -eq $max_retries ]; then
+      echo "[ERROR] Container $container_name did not start after $max_retries retries."
+      exit 1
+    fi
+
+    while :; do
+      if ! check_container_running; then
+        exit 1
+      fi
+      
+      stats_output=$(docker stats --no-stream --format "{{.MemUsage}}" "$container_name")
+      
+      mem_usage=$(echo "$stats_output" | awk '{print $1}' | tr -d '[:alpha:]')
+      mem_unit=$(echo "$stats_output" | awk '{print $1}' | tr -d '[:digit:]')
+
+      echo "[DEBUG] Stats output: $stats_output"  # Debug output
+      echo "[DEBUG] Memory usage: $mem_usage $mem_unit"  # Debug output
+
+      case $mem_unit in
+        MiB) mem_usage_mib=$mem_usage ;;
+        GiB) mem_usage_mib=$(echo "$mem_usage * 1024" | bc -l) ;;
+        KiB) mem_usage_mib=$(echo "scale=2; $mem_usage / 1024" | bc -l) ;;
+        B)   mem_usage_mib=$(echo "scale=2; $mem_usage / 1024 / 1024" | bc -l) ;;
+        *)   mem_usage_mib=0 ;;
+      esac
+
+      echo "[DEBUG] Converted memory usage in MiB: $mem_usage_mib"  # Debug output
+
+      if (( $(echo "$mem_usage_mib > $max_memory" | bc -l) )); then
+        max_memory=$mem_usage_mib
+      fi
+
+      echo "$max_memory" > "$output_file"
       sleep 0.5
     done
   } & echo $! 
