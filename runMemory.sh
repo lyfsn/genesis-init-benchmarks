@@ -147,7 +147,7 @@ start_monitoring() {
 
 stop_monitoring() {
   if [ -n "$mem_pid" ]; then
-    kill $mem_pid
+    kill -9 $mem_pid
     wait $mem_pid 2>/dev/null
     echo "[INFO] Stopped memory monitoring with PID $mem_pid"
     mem_pid=""
@@ -156,7 +156,7 @@ stop_monitoring() {
   pids=$(pgrep -f "$unique_id_pattern")
   if [ -n "$pids" ]; then
     echo "[INFO] Killing all runMemory.sh processes with unique ID pattern '$unique_id_pattern': $pids"
-    kill $pids
+    kill -9 $pids
     wait $pids 2>/dev/null
   fi
 }
