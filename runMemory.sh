@@ -161,22 +161,6 @@ stop_monitoring() {
   fi
 }
 
-start_monitoring() {
-  local client=$1
-  local run=$2
-  local size=$3
-  local suffix=$4
-  local container_name
-  if [ "$client" = "nethermind" ] || [ "$client" = "besu" ]; then
-    container_name="gas-execution-client"
-  else
-    container_name="gas-execution-client-sync"
-  fi
-  mem_output_file="${OUTPUT_DIR}/${client}_${run}_${suffix}_${size}M.txt"
-  mem_pid=$(monitor_memory_usage "$container_name" "$mem_output_file")
-  echo "[INFO] Started memory monitoring with PID $mem_pid"
-}
-
 container_exists() {
   local container_name=$1
   if [ "$(docker ps -a -q -f name=$container_name)" ]; then
@@ -188,6 +172,7 @@ container_exists() {
 
 clean_up() {
   echo "[INFO] Cleaning up containers and data..."
+  stop_monitoring
   if container_exists "gas-execution-client"; then
     docker stop gas-execution-client
     docker rm gas-execution-client
@@ -198,7 +183,6 @@ clean_up() {
   fi
   docker container prune -f
   sudo rm -rf execution-data
-  stop_monitoring # Stop any remaining monitoring processes
   echo "[INFO] Cleanup completed."
 }
 
@@ -246,7 +230,7 @@ for size in "${SIZES[@]}"; do
       docker compose down --remove-orphans
       cd ../..
 
-      start_monitoring $client $run $size "first" &
+      start_monitoring $client $run $size "first"
 
       if [ -z "$image" ]; then
         echo "[INFO] Image input is empty, using default image."
@@ -268,7 +252,7 @@ for size in "${SIZES[@]}"; do
       docker compose stop
       cd ../..
 
-      start_monitoring $client $run $size "second" &
+      start_monitoring $client $run $size "second"
 
       if [ -z "$image" ]; then
         echo "[INFO] Image input is empty, using default image."
