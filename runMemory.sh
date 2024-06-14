@@ -95,7 +95,18 @@ monitor_memory_usage() {
   echo "[INFO] Starting memory monitoring for $container_name..."
 
   while true; do
-    current_memory=$(docker stats --no-stream --format "{{.MemUsage}}" $container_name | awk -F '[ /]+' '{print $1}' | sed 's/[^0-9.]//g')
+    memory_usage=$(docker stats --no-stream --format "{{.MemUsage}}" $container_name)
+    current_memory=$(echo $memory_usage | awk -F '[ /]+' '{print $1}')
+    unit=$(echo $memory_usage | awk -F '[ /]+' '{print $2}')
+
+    # Convert memory to MB
+    case $unit in
+      kB) current_memory=$(echo "$current_memory / 1024" | bc -l) ;;
+      MB) current_memory=$current_memory ;;
+      GB) current_memory=$(echo "$current_memory * 1024" | bc -l) ;;
+      *) echo "[ERROR] Unknown unit: $unit" ;;
+    esac
+
     if (( $(echo "$current_memory > $max_memory_usage" | bc -l) )); then
       max_memory_usage=$current_memory
       echo "$max_memory_usage" > "$output_file"
