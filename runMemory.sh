@@ -88,10 +88,12 @@ check_initialization_completed() {
   return 0
 }
 
-monitor_memory_usage() {
-  local container_name=$1
-  local output_file=$2
-  local unique_id=$3 
+start_monitoring() {
+  local client=$1
+  local run=$2
+  local size=$3
+  local suffix=$4
+  local container_name
   local max_memory=0
   local max_retries=7200
   local retry_count=0
@@ -99,8 +101,14 @@ monitor_memory_usage() {
   local max_wait_time=120
   local container_check_retries=12
   local container_retry_count=0
-
-  echo "-1" > "$output_file"
+  local unique_id="monitor_$client_$run_$size"
+  
+  if [ "$client" = "nethermind" ] || [ "$client" = "besu" ]; then
+    container_name="gas-execution-client"
+  else
+    container_name="gas-execution-client-sync"
+  fi
+  local mem_output_file="${OUTPUT_DIR}/${client}_${run}_${suffix}_${size}M.txt"
 
   check_container_running() {
     while [ $container_retry_count -lt $container_check_retries ]; do
@@ -159,28 +167,10 @@ monitor_memory_usage() {
         max_memory=$mem_usage_mib
       fi
 
-      echo "$max_memory" > "$output_file"
+      echo "$max_memory" > "$mem_output_file"
       sleep 0.5
     done
   } & echo $! 
-}
-
-start_monitoring() {
-  echo "[INFO] Starting memory monitoring..."
-  local client=$1
-  local run=$2
-  local size=$3
-  local suffix=$4
-  local container_name
-  local unique_id="monitor_$client_$run_$size"  
-  if [ "$client" = "nethermind" ] || [ "$client" = "besu" ]; then
-    container_name="gas-execution-client"
-  else
-    container_name="gas-execution-client-sync"
-  fi
-  mem_output_file="${OUTPUT_DIR}/${client}_${run}_${suffix}_${size}M.txt"
-  mem_pid=$(monitor_memory_usage "$container_name" "$mem_output_file" "$unique_id")
-  echo "[INFO] Started memory monitoring with PID $mem_pid and unique ID $unique_id"
 }
 
 stop_monitoring() {
