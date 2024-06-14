@@ -17,8 +17,8 @@ on:
         description: 'Output directory for results'
         default: 'results/memory'
       sizes:
-        description: 'Comma-separated list of sizes (e.g., 1,32,64,256,512)'
-        default: '1,32,64,256,512'
+        description: 'Comma-separated list of sizes (e.g., 1,10,100,500,1000,1500)'
+        default: '1,10,100,500,1000,1500'
 
 jobs:
   build:
