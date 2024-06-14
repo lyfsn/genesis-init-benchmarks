@@ -40,16 +40,15 @@ check_initialization_completed() {
   local max_retries=7200
   local retry_count=0
   local wait_time=0.5 
-  local max_wait_time=120 
-  local container_check_retries=12
+  local chekc_wait_time=1 
+  local container_check_retries=2048
   local container_retry_count=0
 
   check_container_running() {
     while [ $container_retry_count -lt $container_check_retries ]; do
       if [ -z "$(docker ps -q -f name=$container_name)" ]; then
-        echo "[ERROR] Container $container_name has stopped unexpectedly. Retrying... ($((container_retry_count + 1))/$container_check_retries)"
         container_retry_count=$((container_retry_count + 1))
-        sleep $max_wait_time
+        sleep $chekc_wait_time
       else
         return 0
       fi
@@ -195,4 +194,3 @@ done
 
 python3 report_speed.py --resultsPath $OUTPUT_DIR
 echo "[INFO] Benchmarking completed and report generated."
-

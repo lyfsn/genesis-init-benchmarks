@@ -75,11 +75,23 @@ def generate_json_report(processed_results, results_path):
 def ms_to_readable_time(ms):
     if ms is None:
         return "N/A"
+    
     minutes = ms // 60000
     seconds = (ms % 60000) // 1000
-    if minutes == 0:
-        return f"{seconds}s"
-    return f"{minutes}min{seconds}s"
+    milliseconds = ms % 1000
+
+    readable_time = ""
+    
+    if minutes > 0:
+        readable_time += f"{minutes}min"
+    
+    if seconds > 0:
+        readable_time += f"{seconds}s"
+    
+    if milliseconds > 0 or (minutes == 0 and seconds == 0):
+        readable_time += f"{milliseconds}ms"
+    
+    return readable_time
 
 def generate_html_report(processed_results, results_path, images, computer_spec):
     html_content = ('<!DOCTYPE html>'
