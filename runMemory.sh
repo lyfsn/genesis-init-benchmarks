@@ -97,8 +97,8 @@ start_monitoring() {
   local max_memory=0
   local max_retries=7200
   local retry_count=0
-  local wait_time=0.5
-  local max_wait_time=120
+  local wait_time=0.1
+  local max_wait_time=1000
   local container_check_retries=12
   local container_retry_count=0
   local unique_id="monitor_$client_$run_$size"
@@ -168,7 +168,7 @@ start_monitoring() {
       fi
 
       echo "$max_memory" > "$mem_output_file"
-      sleep 0.5
+      sleep $wait_time
     done
   } & echo $! 
 }
