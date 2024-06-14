@@ -58,26 +58,6 @@ wait_for_container() {
   return 1
 }
 
-check_container_running() {
-  local container_name=$1
-  local max_retries=240
-  local retry_count=0
-  local max_wait_time=0.5
-
-  while [ $retry_count -lt $max_retries ]; do
-    if [ -z "$(docker ps -q -f name=$container_name)" ]; then
-      echo "[ERROR] Container $container_name has stopped unexpectedly. Retrying... ($((retry_count + 1))/$max_retries)"
-      retry_count=$((retry_count + 1))
-      sleep $max_wait_time
-    else
-      return 0
-    fi
-  done
-
-  echo "[ERROR] Container $container_name has stopped unexpectedly after $max_retries retries."
-  return 1
-}
-
 check_initialization_completed() {
   local client=$1
   local log_entry=$2
@@ -96,7 +76,7 @@ check_initialization_completed() {
     sleep $wait_time
     retry_count=$((retry_count + 1))
 
-    if ! check_container_running "$container_name"; then
+    if ! wait_for_container "$container_name"; then
       return 1
     fi
 
@@ -127,9 +107,6 @@ start_monitoring() {
     fi
 
     while :; do
-      if ! check_container_running "$container_name"; then
-        exit 1
-      fi
 
       stats_output=$(docker stats --no-stream --format "{{.MemUsage}}" "$container_name")
       mem_usage=$(echo "$stats_output" | awk '{print $1}' | tr -d '[:alpha:]')
