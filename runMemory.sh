@@ -37,18 +37,18 @@ check_initialization_completed() {
   local client=$1
   local log_entry=$2
   local container_name="gas-execution-client"
-  local max_retries=7200
-  local retry_count=0
-  local wait_time=0.5 
-  local chekc_wait_time=1 
-  local container_check_retries=2048
+  local container_wait_time=1 
+  local container_check_retries=60
+  local log_wait_time=0.5 
+  local log_check_retries=3600
+  local log_retry_count=0
   local container_retry_count=0
 
   check_container_running() {
     while [ $container_retry_count -lt $container_check_retries ]; do
       if [ -z "$(docker ps -q -f name=$container_name)" ]; then
         container_retry_count=$((container_retry_count + 1))
-        sleep $chekc_wait_time
+        sleep $container_wait_time
       else
         return 0
       fi
@@ -64,18 +64,18 @@ check_initialization_completed() {
 
   echo "[INFO] Container $container_name has started."
 
-  retry_count=0
+  log_retry_count=0
   echo "[INFO] Waiting for log entry: '$log_entry' in $container_name..."
   until docker logs $container_name 2>&1 | grep -q "$log_entry"; do
-    sleep $wait_time
-    retry_count=$((retry_count+1))
+    sleep $log_wait_time
+    log_retry_count=$((log_retry_count+1))
 
     check_container_running
     if [ $? -ne 0 ]; then
       return 1
     fi
 
-    if [ $retry_count -ge $max_retries ]; then
+    if [ $log_retry_count -ge $log_check_retries ]; then
       echo "[ERROR] Log entry '$log_entry' not found in $container_name within the expected time."
       return 1
     fi
@@ -91,6 +91,7 @@ monitor_memory_usage() {
   local interval=1
   local max_memory_usage=0
 
+  echo "-1" > "$output_file"
   echo "[INFO] Starting memory monitoring for $container_name..."
 
   while true; do
