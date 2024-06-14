@@ -35,7 +35,6 @@ apt install -y jq
 python3 computer_specs.py --output_folder $OUTPUT_DIR
 echo "[INFO] Dependencies installed."
 
-
 check_initialization_completed() {
   local client=$1
   local log_entry=$2
