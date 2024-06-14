@@ -92,6 +92,7 @@ check_initialization_completed() {
 monitor_memory_usage() {
   local container_name=$1
   local output_file=$2
+  local unique_id=$3 
   local max_memory=0
 
   echo "-1" > "$output_file"
@@ -125,8 +126,40 @@ monitor_memory_usage() {
       fi
       sleep 0.5
     done
-  } &
-  echo $!
+  } & echo $! 
+}
+
+start_monitoring() {
+  local client=$1
+  local run=$2
+  local size=$3
+  local suffix=$4
+  local container_name
+  local unique_id="monitor_$client_$run_$size"  
+  if [ "$client" = "nethermind" ] || [ "$client" = "besu" ]; then
+    container_name="gas-execution-client"
+  else
+    container_name="gas-execution-client-sync"
+  fi
+  mem_output_file="${OUTPUT_DIR}/${client}_${run}_${suffix}_${size}M.txt"
+  mem_pid=$(monitor_memory_usage "$container_name" "$mem_output_file" "$unique_id")
+  echo "[INFO] Started memory monitoring with PID $mem_pid and unique ID $unique_id"
+}
+
+stop_monitoring() {
+  if [ -n "$mem_pid" ]; then
+    kill $mem_pid
+    wait $mem_pid 2>/dev/null
+    echo "[INFO] Stopped memory monitoring with PID $mem_pid"
+    mem_pid=""
+  fi
+  unique_id_pattern="monitor_"
+  pids=$(pgrep -f "$unique_id_pattern")
+  if [ -n "$pids" ]; then
+    echo "[INFO] Killing all runMemory.sh processes with unique ID pattern '$unique_id_pattern': $pids"
+    kill $pids
+    wait $pids 2>/dev/null
+  fi
 }
 
 start_monitoring() {
@@ -143,15 +176,6 @@ start_monitoring() {
   mem_output_file="${OUTPUT_DIR}/${client}_${run}_${suffix}_${size}M.txt"
   mem_pid=$(monitor_memory_usage "$container_name" "$mem_output_file")
   echo "[INFO] Started memory monitoring with PID $mem_pid"
-}
-
-stop_monitoring() {
-  if [ -n "$mem_pid" ]; then
-    kill $mem_pid
-    wait $mem_pid 2>/dev/null
-    echo "[INFO] Stopped memory monitoring with PID $mem_pid"
-    mem_pid=""
-  fi
 }
 
 container_exists() {
