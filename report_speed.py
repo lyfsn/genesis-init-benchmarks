@@ -82,9 +82,15 @@ def ms_to_readable_time(ms):
     seconds = ms / 1000
     
     if seconds < 1:
-        return f"{ms}ms"
-    else:
+        return f"{ms:.0f}ms"
+    
+    if seconds < 60:
         return f"{int(seconds)}s"
+    
+    minutes = int(seconds // 60)
+    remaining_seconds = int(seconds % 60)
+    
+    return f"{minutes}min{remaining_seconds}s"
 
 def generate_html_report(processed_results, results_path, images, computer_spec):
     html_content = ('<!DOCTYPE html>'
