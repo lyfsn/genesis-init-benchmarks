@@ -52,11 +52,17 @@ def create_large_chainspec(input_file, output_file, target_size, initial_batch_s
         thread.start()
         threads.append(thread)
 
+    log_counter = 0
+    log_frequency = 100
+
     while current_size < target_size:
         new_accounts = queue.get()
         accounts.update(new_accounts)
         current_size += average_account_size * batch_size
-        print(f"Current estimated size: {current_size / 1024 / 1024:.2f} MB")
+        log_counter += 1
+        if log_counter >= log_frequency:
+            print(f"Current estimated size: {current_size / 1024 / 1024:.2f} MB")
+            log_counter = 0
         if current_size >= target_size:
             break
 
