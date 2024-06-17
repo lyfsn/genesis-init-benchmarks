@@ -68,6 +68,11 @@ def process_client_results(client_results):
                 processed_results[client][size][part] = calculate_metrics(values)
     return processed_results
 
+def convert_to_gigabytes_str(value_in_megabytes):
+    if value_in_megabytes < 0:
+        return "∞"
+    return f"{value_in_megabytes / 1024:.2f}G"
+
 def generate_json_report(processed_results, results_path):
     report_path = os.path.join(results_path, 'reports')
     os.makedirs(report_path, exist_ok=True)
@@ -123,11 +128,11 @@ def generate_html_report(processed_results, results_path, images, computer_spec)
             for part, metrics in sorted_parts:
                 html_content += (f'<tr><td>{size}</td>'
                                  f'<td>{part}</td>'
-                                 f'<td>{metrics["max"] / 1024:.2f}G</td>'
-                                 f'<td>{metrics["p50"] / 1024:.2f}G</td>'
-                                 f'<td>{metrics["p95"] / 1024:.2f}G</td>'
-                                 f'<td>{metrics["p99"] / 1024:.2f}G</td>'
-                                 f'<td>{metrics["min"] / 1024:.2f}G</td>'
+                                 f'<td>{convert_to_gigabytes_str(metrics["max"])}</td>'
+                                 f'<td>{convert_to_gigabytes_str(metrics["p50"])}</td>'
+                                 f'<td>{convert_to_gigabytes_str(metrics["p95"])}</td>'
+                                 f'<td>{convert_to_gigabytes_str(metrics["p99"])}</td>'
+                                 f'<td>{convert_to_gigabytes_str(metrics["min"])}</td>'
                                  f'<td>{metrics["count"]}</td></tr>')
         html_content += '</tbody></table>'
     html_content += '</body></html>'
