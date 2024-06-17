@@ -97,8 +97,10 @@ monitor_memory_usage() {
   while true; do
     memory_usage=$(docker stats --no-stream --format "{{.MemUsage}}" $container_name)
     echo "[DEBUG] Memory usage raw output: $memory_usage"
-    current_memory=$(echo $memory_usage | awk -F '[ /]+' '{print $1}')
-    unit=$(echo $memory_usage | awk -F '[ /]+' '{print $2}')
+
+    # Extract current memory usage and its unit
+    current_memory=$(echo $memory_usage | awk '{print $1}' | sed 's/[^0-9.]//g')
+    unit=$(echo $memory_usage | awk '{print $1}' | sed 's/[0-9.]//g')
 
     echo "[DEBUG] Current memory: $current_memory, Unit: $unit"
 
