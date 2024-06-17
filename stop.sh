@@ -7,3 +7,4 @@ docker rm gas-execution-client-sync
 
 pkill runMemory.sh
 pkill runSpeed.sh
+pkill run.sh
