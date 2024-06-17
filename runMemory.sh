@@ -101,9 +101,12 @@ monitor_memory_usage() {
 
     # Convert memory to MB
     case $unit in
-      kB) current_memory=$(echo "$current_memory / 1024" | bc -l) ;;
+      kB) current_memory=$(echo "scale=2; $current_memory / 1024" | bc) ;;
       MB) current_memory=$current_memory ;;
-      GB) current_memory=$(echo "$current_memory * 1024" | bc -l) ;;
+      GB) current_memory=$(echo "scale=2; $current_memory * 1024" | bc) ;;
+      KiB) current_memory=$(echo "scale=2; $current_memory / 1024" | bc) ;;
+      MiB) current_memory=$current_memory ;;
+      GiB) current_memory=$(echo "scale=2; $current_memory * 1024" | bc) ;;
       *) echo "[ERROR] Unknown unit: $unit" ;;
     esac
 
