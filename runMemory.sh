@@ -96,6 +96,13 @@ monitor_memory_usage() {
 
   while true; do
     memory_usage=$(docker stats --no-stream --format "{{.MemUsage}}" $container_name)
+    
+    if [ -z "$memory_usage" ]; then
+      echo "[ERROR] Failed to get memory usage for $container_name"
+      sleep $interval
+      continue
+    fi
+
     echo "[DEBUG] Memory usage raw output: $memory_usage"
 
     # Extract current memory usage and its unit
@@ -222,13 +229,8 @@ for size in "${SIZES[@]}"; do
       clean_up
       cd ../..
 
-      if [[ "$client" == "nethermind" || "$client" == "besu" ]]; then
-        memory_output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M.txt"
-        monitor_memory_usage "gas-execution-client" $memory_output_file
-      else
-        memory_output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M.txt"
-        monitor_memory_usage "gas-execution-client-sync" $memory_output_file
-      fi
+      memory_output_file="${OUTPUT_DIR}/${client}_${run}_second_${size}M.txt"
+      monitor_memory_usage "gas-execution-client" $memory_output_file
 
       if [ -z "$image" ]; then
         echo "[INFO] Image input is empty, using default image."
