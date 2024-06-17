@@ -99,6 +99,9 @@ monitor_memory_usage() {
     current_memory=$(echo $memory_usage | awk -F '[ /]+' '{print $1}')
     unit=$(echo $memory_usage | awk -F '[ /]+' '{print $2}')
 
+    # Remove any commas from the number
+    current_memory=$(echo $current_memory | sed 's/,//g')
+
     # Convert memory to MB
     case $unit in
       kB) current_memory=$(echo "scale=2; $current_memory / 1024" | bc) ;;
