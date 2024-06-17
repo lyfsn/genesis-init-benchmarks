@@ -8,8 +8,9 @@ def read_computer_specs(file_path):
         lines = file.readlines()
     specs = {}
     for line in lines[1:]:
-        key, value = line.split(": ")
-        specs[key.strip()] = value.strip()
+        if ": " in line:
+            key, value = line.split(": ", 1)
+            specs[key.strip()] = value.strip()
     return specs
 
 def read_images(file_path):
